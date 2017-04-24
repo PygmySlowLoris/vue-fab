@@ -1,0 +1,34 @@
+{
+  "name": "vue-fab",
+  "version": "1.0.5",
+  "description": "Vue Floating Action Button",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PygmySlowLoris/vue-fab"
+  },
+  "keywords": [
+    "vue",
+    "fab",
+    "floating",
+    "action",
+    "button"
+  ],
+  "author": {
+    "name": "PygmySlowLoris Team",
+    "email": "edujugon@gmail.com",
+    "url": "https://github.com/PygmySlowLoris"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PygmySlowLoris/vue-fab/issues"
+  },
+  "homepage": "https://github.com/PygmySlowLoris/vue-fab#readme",
+  "dependencies": {
+    "vue": "^2.2.6",
+    "vue-clickaway": "^2.1.0"
+  }
+}

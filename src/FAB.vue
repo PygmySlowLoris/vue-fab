@@ -42,8 +42,7 @@
     }
 </script>
 
-<style scoped lang="scss">
-
+<style scoped>
     .fab-wrapper {
         position: absolute;
         bottom: 3rem;
@@ -60,36 +59,40 @@
         display: flex;
         align-items: center;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
-        & .material-icons {
-            color: white;
-            -webkit-transition: .4s all;
-            -moz-transition: .4s all;
-            transition: .4s all;
-            margin: 0px auto;
-            &.rotate {
-                -ms-transform: rotate(135deg); /* IE 9 */
-                -webkit-transform: rotate(135deg); /* Chrome, Safari, Opera */
-                transform: rotate(135deg);
-            }
-        }
+    }
+
+    .fab .material-icons {
+        color: white;
+        -webkit-transition: .4s all;
+        -moz-transition: .4s all;
+        transition: .4s all;
+        margin: 0px auto;
+    }
+
+    .fab .material-icons.rotate {
+        -ms-transform: rotate(135deg); /* IE 9 */
+        -webkit-transform: rotate(135deg); /* Chrome, Safari, Opera */
+        transform: rotate(135deg);
     }
 
     .fab-list {
         position: relative;
         z-index: 9999;
         margin: 1rem .5rem;
-        & li {
-            width: 3rem;
-            height: 3rem;
-            margin-top: 1rem;
-            display: flex;
-            align-items: center;
-            border-radius: 100px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
-            & .material-icons {
-                color: white;
-                margin: 0px auto;
-            }
-        }
+    }
+
+    .fab-list li {
+        width: 3rem;
+        height: 3rem;
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        border-radius: 100px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+    }
+
+    .fab-list li .material-icons {
+        color: white;
+        margin: 0px auto;
     }
 </style>

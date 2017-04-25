@@ -39,15 +39,21 @@ And
 
 ##  Examples
 
+Include the component in your .vue file, `styles` & `actions` props are required for the component to work. The `@event` has to match the name given in the `actions` prop. 
 ```
 <template>
   <fab :styles="fabStyles"
-               :actions="fabActions"
-               @cache="cache"
-               @alertMe="alert"
-          ></fab>
+       :actions="fabActions"
+       @cache="cache"
+       @alertMe="alert"
+  ></fab>
 </template>
+```
 
+Match your data with your components props. The `bgColor` accepts either HEX, RBG or RGBA format.
+
+<b>Remember:</b> Only material icons are accepted.
+```
 <script>
 import fab from 'vue-fab'
 

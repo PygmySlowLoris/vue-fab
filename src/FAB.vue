@@ -116,10 +116,10 @@
 
     .fab {
         border-radius: 100px;
-        width: 4rem;
+        width: 68px;
         position: relative;
         overflow: hidden;
-        height: 4rem;
+        height: 68px;
         display: flex;
         align-items: center;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
@@ -134,21 +134,21 @@
     }
 
     .fab .material-icons.rotate {
-        -ms-transform: rotate(135deg); /* IE 9 */
-        -webkit-transform: rotate(135deg); /* Chrome, Safari, Opera */
-        transform: rotate(135deg);
+        -ms-transform: rotate(315deg); /* IE 9 */
+        -webkit-transform: rotate(315deg); /* Chrome, Safari, Opera */
+        transform: rotate(315deg);
     }
 
     .fab-list {
         position: relative;
         z-index: 9999;
-        margin: 1rem .5rem;
+        margin: 2vh 0.5vw;
     }
 
     .fab-list li {
-        width: 3rem;
-        height: 3rem;
-        margin-top: 1rem;
+        width: 50px;
+        height: 50px;
+        margin-top: 2vh;
         display: flex;
         align-items: center;
         border-radius: 100px;
@@ -160,23 +160,41 @@
         margin: 0px auto;
     }
 
+    .pointer {
+        cursor: pointer;
+    }
+
+    /* Rules for sizing the icon. */
+    .material-icons.md-18 { font-size: 18px; }
+    .material-icons.md-24 { font-size: 24px; }
+    .material-icons.md-36 { font-size: 36px; }
+    .material-icons.md-48 { font-size: 48px; }
+
+    /* Rules for using icons as black on a light background. */
+    .material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
+    .material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
+
+    /* Rules for using icons as white on a dark background. */
+    .material-icons.md-light { color: rgba(255, 255, 255, 1); }
+    .material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }
+
     @media screen and (max-width: 768px) {
         .fab-list {
-            margin: 1rem 0rem 0.5rem 0.35rem;
+            margin: 2vh 1.8vw;
         }
         .fab-list li {
-            width: 2.6rem;
-            height: 2.6rem;
+            width: 40px;
+            height: 40px;
         }
         .fab-list li i {
-            font-size: 1.3rem !important;
+            font-size: 24px !important;
         }
         .fab {
-            width: 3.2rem;
-            height: 3.2rem;
+            width: 55px;
+            height: 55px;
         }
         .fab i {
-            font-size: 2rem !important;
+            font-size: 34px !important;
         }
 
     }

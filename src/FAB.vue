@@ -1,20 +1,22 @@
 <template>
     <div class="fab-wrapper" v-on-clickaway="away" :style="[pos, {zIndex: styles.zIndex}]" >
-        <transition name="fab-actions-appear"
-                    :enter-active-class="transitionEnter"
-                    :leave-active-class="transitionLeave"
-        >
-            <ul v-show="toggle" class="fab-list">
-                <li v-for="action in actions" v-bind:style="{ 'background-color': styles.bgColor }"
-                    v-on:click="toParent(action.name)" class="pointer">
-                    <i class="material-icons">{{action.icon}}</i>
-                </li>
-            </ul>
-        </transition>
+        <div class="actions-container" :style="listPos">
+            <transition name="fab-actions-appear"
+                        :enter-active-class="transitionEnter"
+                        :leave-active-class="transitionLeave"
+            >
+                <ul v-show="toggle" class="fab-list">
+                    <li v-for="action in actions" :style="{ 'background-color': styles.bgColor }"
+                        @click="toParent(action.name)" class="pointer">
+                        <i class="material-icons">{{action.icon}}</i>
+                    </li>
+                </ul>
+            </transition>
+        </div>
         <div @click="toggle = !toggle"
-             class="fab pointer" v-bind:style="{ 'background-color': styles.bgColor }"
+             class="fab pointer" :style="{ 'background-color': styles.bgColor }"
         >
-            <i class="material-icons md-36" v-bind:class="{ rotate: toggle }">add</i>
+            <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
         </div>
     </div>
 </template>
@@ -32,6 +34,20 @@
         },
         props: ['styles', 'actions'],
         computed: {
+            listPos() {
+                let mask = {};
+                if (this.styles.position === 'top-right' || this.styles.position === 'top-left') {
+                    return mask = {
+                        top: '-20px',
+                        paddingTop: '20px'
+                    }
+                } else {
+                    return mask = {
+                        bottom: '-20px',
+                        paddingBottom: '20px'
+                    }
+                }
+            },
             transitionEnter() {
                 let animation = this.animation;
                 return animation.enter;
@@ -68,7 +84,7 @@
                 this.toggle = false;
             },
             position() {
-                this.pos = {}
+                this.pos = {};
                 switch (this.styles.position) {
                     case 'bottom-right':
                         this.pos.right = '5vw';
@@ -94,7 +110,7 @@
             moveTransition() {
                 if (this.styles.position === 'top-right' || this.styles.position === 'top-left') {
                     let wrapper = document.getElementsByClassName('fab-wrapper');
-                    let el = document.getElementsByClassName('fab-list');
+                    let el = document.getElementsByClassName('actions-container');
                     wrapper[0].appendChild(el[0]);
                 }
             }
@@ -116,13 +132,14 @@
 
     .fab {
         border-radius: 100px;
-        width: 68px;
+        width: 65px;
         position: relative;
         overflow: hidden;
-        height: 68px;
+        height: 65px;
         display: flex;
         align-items: center;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+        z-index: 2;
     }
 
     .fab .material-icons {
@@ -141,7 +158,7 @@
 
     .fab-list {
         position: relative;
-        z-index: 9999;
+        z-index: 1;
         margin: 2vh 0.5vw;
     }
 
@@ -162,6 +179,16 @@
 
     .pointer {
         cursor: pointer;
+    }
+
+    .fab ul {
+        padding: 0;
+    }
+
+    .fab-wrapper .actions-container {
+        overflow: hidden;
+        z-index: 0;
+        position: relative;
     }
 
     /* Rules for sizing the icon. */

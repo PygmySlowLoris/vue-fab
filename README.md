@@ -28,14 +28,21 @@ And
 
 `style` - Sets the background color.
 *   Type - Object 
-*   Properties:
-    *   `bgColor`
+
+| Properties      | Type      | Values     |
+| :--------------- | :-------  | :--------- |
+|  `bgColor`      | String    | <b>'#333333'</b><br> Accepts all color formats: HEX, RGB & RGBA |
+|  `position`     | String    | <b>Default 'bottom-left'</b> <br>'bottom-left', 'bottom-right', 'top-left','top-right'  |
+|  `zIndex`       | String    | <b>Default '999'</b> <br>Set any value that suits your needs.  |
 
 `actions` - Sets a list of actions.
 *   Type - Object 
-*   Properties:
-    *   `name` Name of the event.
-    *   `icon` Icon name. (Please refer to [Material icons](https://material.io/icons/))
+
+| Properties      | Type      | Values     |
+| :--------------- | :-------  | :--------- |
+|  `name`      | String    |  Name of the event. |
+|  `icon`     | String    | Icon name. <br> (Please refer to [Material icons](https://material.io/icons/))  |
+
 
 ##  Examples
 

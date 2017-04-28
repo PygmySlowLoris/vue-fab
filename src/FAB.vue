@@ -1,10 +1,10 @@
 <template>
-    <div class="fab-wrapper" v-on-clickaway="away">
+    <div class="fab-wrapper" v-on-clickaway="away" :style="[pos, {zIndex: styles.zIndex}]" >
         <transition name="fab-actions-appear"
-                    enter-active-class="animated fadeInUp"
-                    leave-active-class="animated fadeOutDown"
+                    :enter-active-class="transitionEnter"
+                    :leave-active-class="transitionLeave"
         >
-            <ul v-if="toggle" class="fab-list">
+            <ul v-show="toggle" class="fab-list">
                 <li v-for="action in actions" v-bind:style="{ 'background-color': styles.bgColor }"
                     v-on:click="toParent(action.name)" class="pointer">
                     <i class="material-icons">{{action.icon}}</i>
@@ -26,10 +26,39 @@
         mixins: [clickaway],
         data() {
             return {
-                toggle: false
+                toggle: false,
+                pos: {}
             }
         },
         props: ['styles', 'actions'],
+        computed: {
+            transitionEnter() {
+                let animation = this.animation;
+                return animation.enter;
+            },
+            transitionLeave() {
+                let animation = this.animation;
+                return animation.leave;
+            },
+            animation() {
+                if (this.styles.position === 'top-right' || this.styles.position === 'top-left') {
+                    return {
+                        enter: 'animated fadeInDown',
+                        leave: 'animated fadeOutUp'
+                    };
+                } else if (this.styles.position === 'bottom-right' || this.styles.position === 'bottom-left') {
+                    return {
+                        enter: 'animated fadeInUp',
+                        leave: 'animated fadeOutDown'
+                    };
+                } else {
+                    return {
+                        enter: 'animated fadeInUp',
+                        leave: 'animated fadeOutDown'
+                    };
+                }
+            }
+        },
         methods: {
             toParent(name) {
                 this.$emit(name);
@@ -37,16 +66,51 @@
             },
             away() {
                 this.toggle = false;
+            },
+            position() {
+                this.pos = {}
+                switch (this.styles.position) {
+                    case 'bottom-right':
+                        this.pos.right = '5vw';
+                        this.pos.bottom = '4vh';
+                        break;
+                    case 'bottom-left':
+                        this.pos.left = '5vw';
+                        this.pos.bottom = '4vh';
+                        break;
+                    case 'top-left':
+                        this.pos.left = '5vw';
+                        this.pos.top = '4vh';
+                        break;
+                    case 'top-right':
+                        this.pos.right = '5vw';
+                        this.pos.top = '4vh';
+                        break;
+                    default:
+                        this.pos.right = '5vw';
+                        this.pos.bottom = '4vh';
+                }
+            },
+            moveTransition() {
+                if (this.styles.position === 'top-right' || this.styles.position === 'top-left') {
+                    let wrapper = document.getElementsByClassName('fab-wrapper');
+                    let el = document.getElementsByClassName('fab-list');
+                    wrapper[0].appendChild(el[0]);
+                }
             }
+        },
+        mounted() {
+            this.moveTransition();
+        },
+        created() {
+            this.position();
         }
     }
 </script>
 
 <style scoped>
     .fab-wrapper {
-        position: absolute;
-        bottom: 3rem;
-        right: 3rem;
+        position: fixed;
         z-index: 999;
     }
 
@@ -94,5 +158,26 @@
     .fab-list li .material-icons {
         color: white;
         margin: 0px auto;
+    }
+
+    @media screen and (max-width: 768px) {
+        .fab-list {
+            margin: 1rem 0rem 0.5rem 0.35rem;
+        }
+        .fab-list li {
+            width: 2.6rem;
+            height: 2.6rem;
+        }
+        .fab-list li i {
+            font-size: 1.3rem !important;
+        }
+        .fab {
+            width: 3.2rem;
+            height: 3.2rem;
+        }
+        .fab i {
+            font-size: 2rem !important;
+        }
+
     }
 </style>

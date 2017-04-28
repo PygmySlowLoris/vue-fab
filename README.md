@@ -26,7 +26,7 @@ And
 
 ##  Properties
 
-`style` - Sets the background color.
+`style` - Sets styles properties.
 *   Type - Object 
 
 | Properties      | Type      | Values     |

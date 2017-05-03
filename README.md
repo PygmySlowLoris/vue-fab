@@ -1,5 +1,9 @@
 #   FAB
 
+<p align="center">
+<img src="https://media.giphy.com/media/neHUu8DKlgdVK/giphy.gif" />
+</p>
+
 Floating Action Button for Vue.
 
 The component supports multiple action buttons so you can add as many actions as you need. It will fire an event to the parent when clicking on each one. 

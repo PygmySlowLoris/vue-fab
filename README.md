@@ -16,7 +16,7 @@ npm install vue-fab --save
 
 ##  Dependencies
 
-Include the following stylesheets on your document's <head>
+Include the following stylesheets on your document's head
 
 ```
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">

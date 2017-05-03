@@ -181,8 +181,9 @@
         cursor: pointer;
     }
 
-    .fab ul {
-        padding: 0;
+    ul {
+        list-style-type: none;
+        padding: 0 !important;
     }
 
     .fab-wrapper .actions-container {

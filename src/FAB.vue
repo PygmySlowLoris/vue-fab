@@ -1,6 +1,7 @@
 <template>
-    <div class="fab-wrapper" v-on-clickaway="away" :style="[pos, {zIndex: styles.zIndex}]" >
-        <div class="actions-container" :style="listPos">
+    <div :id="styles.position + '-wrapper'" class="fab-wrapper" v-on-clickaway="away"
+         :style="[pos, {zIndex: styles.zIndex}]">
+        <div :id="styles.position + '-action'" class="actions-container" :style="listPos">
             <transition name="fab-actions-appear"
                         :enter-active-class="transitionEnter"
                         :leave-active-class="transitionLeave"
@@ -32,7 +33,17 @@
                 pos: {}
             }
         },
-        props: ['styles', 'actions'],
+        props: {
+            styles: {
+                default: () => {
+                    return {
+                        bgColor: '#333333',
+                        position: 'bottom-right'
+                    }
+                }
+            },
+            actions: {}
+        },
         computed: {
             listPos() {
                 let mask = {};
@@ -109,9 +120,9 @@
             },
             moveTransition() {
                 if (this.styles.position === 'top-right' || this.styles.position === 'top-left') {
-                    let wrapper = document.getElementsByClassName('fab-wrapper');
-                    let el = document.getElementsByClassName('actions-container');
-                    wrapper[0].appendChild(el[0]);
+                    let wrapper = document.getElementById(this.styles.position + '-wrapper');
+                    let el = document.getElementById(this.styles.position + '-action');
+                    wrapper.appendChild(el);
                 }
             }
         },
@@ -193,34 +204,59 @@
     }
 
     /* Rules for sizing the icon. */
-    .material-icons.md-18 { font-size: 18px; }
-    .material-icons.md-24 { font-size: 24px; }
-    .material-icons.md-36 { font-size: 36px; }
-    .material-icons.md-48 { font-size: 48px; }
+    .material-icons.md-18 {
+        font-size: 18px;
+    }
+
+    .material-icons.md-24 {
+        font-size: 24px;
+    }
+
+    .material-icons.md-36 {
+        font-size: 36px;
+    }
+
+    .material-icons.md-48 {
+        font-size: 48px;
+    }
 
     /* Rules for using icons as black on a light background. */
-    .material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
-    .material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
+    .material-icons.md-dark {
+        color: rgba(0, 0, 0, 0.54);
+    }
+
+    .material-icons.md-dark.md-inactive {
+        color: rgba(0, 0, 0, 0.26);
+    }
 
     /* Rules for using icons as white on a dark background. */
-    .material-icons.md-light { color: rgba(255, 255, 255, 1); }
-    .material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }
+    .material-icons.md-light {
+        color: rgba(255, 255, 255, 1);
+    }
+
+    .material-icons.md-light.md-inactive {
+        color: rgba(255, 255, 255, 0.3);
+    }
 
     @media screen and (max-width: 768px) {
         .fab-list {
             margin: 2vh 1.8vw;
         }
+
         .fab-list li {
             width: 40px;
             height: 40px;
         }
+
         .fab-list li i {
             font-size: 24px !important;
         }
+
         .fab {
             width: 55px;
             height: 55px;
         }
+
         .fab i {
             font-size: 34px !important;
         }

@@ -3,7 +3,31 @@
         <img width="400px" src="./assets/logo.png">
         <h1></h1>
         <h2>Floating Action Button</h2>
-        <fab :styles="fabStyles"
+        <fab
+             :actions="fabActions"
+             @cache="cache"
+             @alertMe="alert"
+        ></fab>
+        <fab :styles="{
+                    bgColor: '#d11014',
+                    position:'bottom-left'
+                }"
+             :actions="fabActions"
+             @cache="cache"
+             @alertMe="alert"
+        ></fab>
+        <fab :styles="{
+                    bgColor: '#119912',
+                    position:'top-left'
+                }"
+             :actions="fabActions"
+             @cache="cache"
+             @alertMe="alert"
+        ></fab>
+        <fab :styles="{
+                    bgColor: '#102499',
+                    position:'top-right'
+                }"
              :actions="fabActions"
              @cache="cache"
              @alertMe="alert"

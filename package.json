@@ -16,12 +16,12 @@
   ],
   "author": {
     "name": "PygmySlowLoris Team",
-    "email": "edujugon@gmail.com",
+    "email": "team@pygmyslowloris.org",
     "url": "https://github.com/PygmySlowLoris"
   },
   "contributors": [
-    "Guido Ceraso <guidoceraso@gmail.com> (https://github.com/hazzo)",
-    "Eduardo Marcos <edujugon@gmail.com> (https://github.com/Edujugon)"
+    "Eduardo Marcos <edujugon@gmail.com> (https://github.com/Edujugon)",
+    "Guido Ceraso <guidoceraso@gmail.com> (https://github.com/hazzo)"
   ],
   "license": "MIT",
   "bugs": {

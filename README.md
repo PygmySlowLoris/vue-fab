@@ -38,8 +38,7 @@ And
 |  `bgColor`      | String    | <b>'#333333'</b><br> Accepts all color formats: HEX, RGB & RGBA |
 |  `position`     | String    | <b>Default 'bottom-left'</b> <br>'bottom-left', 'bottom-right', 'top-left','top-right'  |
 |  `zIndex`       | String    | <b>Default '999'</b> <br>Set any value that suits your needs.  |
-|  `ripple`       | Object    | Has two properties: *`show`: `true` or `false`
-   * `color`: `'dark'` or `'light'`|
+|  `ripple`       | Object    | Has <b>two properties</b>:   <br> -`show`: `true` or `false` <br> -`color`: `'dark'` or `'light'`|
 
 `actions` - Sets a list of actions.
 *   Type - Object 

@@ -10,7 +10,11 @@
         ></fab>
         <fab :styles="{
                     bgColor: '#d11014',
-                    position:'bottom-left'
+                    position:'bottom-left',
+                    zIndex: 999,
+                    ripple: {
+                        show: false
+                    }
                 }"
              :actions="fabActions"
              @cache="cache"
@@ -18,7 +22,12 @@
         ></fab>
         <fab :styles="{
                     bgColor: '#119912',
-                    position:'top-left'
+                    position:'top-left',
+                    zIndex: 999,
+                    ripple: {
+                        show: true,
+                        color: 'dark'
+                    }
                 }"
              :actions="fabActions"
              @cache="cache"
@@ -26,7 +35,12 @@
         ></fab>
         <fab :styles="{
                     bgColor: '#102499',
-                    position:'top-right'
+                    position:'top-right',
+                    zIndex: 999,
+                    ripple: {
+                        show: true,
+                        color: 'light'
+                    }
                 }"
              :actions="fabActions"
              @cache="cache"
@@ -44,9 +58,6 @@
         },
         data(){
             return {
-                fabStyles: {
-                    bgColor: '#778899'
-                },
                 fabActions: [
                     {
                         name: 'cache',

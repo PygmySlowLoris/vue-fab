@@ -14,19 +14,30 @@
                 </ul>
             </transition>
         </div>
-        <div @click="toggle = !toggle"
-             class="fab pointer" :style="{ 'background-color': styles.bgColor }"
-        >
-            <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
-        </div>
+        <template v-if="styles.ripple.show">
+            <div v-ripple="(styles.ripple.color == 'light') ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
+                 class="fab pointer" :style="{ 'background-color': styles.bgColor }"
+            >
+                <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
+            </div>
+        </template>
+        <template v-else>
+            <div @click="toggle = !toggle"
+                 class="fab pointer" :style="{ 'background-color': styles.bgColor, 'z-index': styles.zIndex }"
+            >
+                <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
+            </div>
+        </template>
     </div>
 </template>
 
 <script>
     import {mixin as clickaway} from 'vue-clickaway';
+    import Ripple from 'vue-ripple-directive';
 
     export default {
         mixins: [clickaway],
+        directives: {Ripple},
         data() {
             return {
                 toggle: false,
@@ -38,7 +49,12 @@
                 default: () => {
                     return {
                         bgColor: '#333333',
-                        position: 'bottom-right'
+                        position: 'bottom-right',
+                        zIndex: 999,
+                        ripple: {
+                            show: true,
+                            color: 'light'
+                        }
                     }
                 }
             },

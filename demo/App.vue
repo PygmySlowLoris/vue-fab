@@ -4,47 +4,29 @@
         <h1></h1>
         <h2>Floating Action Button</h2>
         <fab
+                :actions="fabActions"
+                @cache="cache"
+                @alertMe="alert"
+        ></fab>
+        <fab bg-color="#d11014"
+             position="top-left"
              :actions="fabActions"
              @cache="cache"
              @alertMe="alert"
         ></fab>
-        <fab :styles="{
-                    bgColor: '#d11014',
-                    position:'bottom-left',
-                    zIndex: 999,
-                    ripple: {
-                        show: false
-                    }
-                }"
+        <fab bg-color="#119912"
+             position="bottom-left"
              :actions="fabActions"
              @cache="cache"
              @alertMe="alert"
+             :ripple="{show: true,color: 'dark'}"
         ></fab>
-        <fab :styles="{
-                    bgColor: '#119912',
-                    position:'top-left',
-                    zIndex: 999,
-                    ripple: {
-                        show: true,
-                        color: 'dark'
-                    }
-                }"
+        <fab bg-color="#102499"
+             position="top-right"
              :actions="fabActions"
              @cache="cache"
              @alertMe="alert"
-        ></fab>
-        <fab :styles="{
-                    bgColor: '#102499',
-                    position:'top-right',
-                    zIndex: 999,
-                    ripple: {
-                        show: true,
-                        color: 'light'
-                    }
-                }"
-             :actions="fabActions"
-             @cache="cache"
-             @alertMe="alert"
+             :ripple="{show: true,color: 'light'}"
         ></fab>
     </div>
 </template>
@@ -94,7 +76,6 @@
     h1, h2 {
         font-weight: normal;
     }
-
 
     li {
         display: inline-block;

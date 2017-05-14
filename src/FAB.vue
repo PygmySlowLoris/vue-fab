@@ -1,29 +1,29 @@
 <template>
-    <div :id="styles.position + '-wrapper'" class="fab-wrapper" v-on-clickaway="away"
-         :style="[pos, {zIndex: styles.zIndex}]">
-        <div :id="styles.position + '-action'" class="actions-container" :style="listPos">
+    <div :id="position + '-wrapper'" class="fab-wrapper" v-on-clickaway="away"
+         :style="[pos, {zIndex: zIndex}]">
+        <div :id="position + '-action'" class="actions-container" :style="listPos">
             <transition name="fab-actions-appear"
                         :enter-active-class="transitionEnter"
                         :leave-active-class="transitionLeave"
             >
                 <ul v-show="toggle" class="fab-list">
-                    <li v-for="action in actions" :style="{ 'background-color': styles.bgColor }"
+                    <li v-for="action in actions" :style="{ 'background-color': bgColor }"
                         @click="toParent(action.name)" class="pointer">
                         <i class="material-icons">{{action.icon}}</i>
                     </li>
                 </ul>
             </transition>
         </div>
-        <template v-if="styles.ripple.show">
-            <div v-ripple="(styles.ripple.color == 'light') ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
-                 class="fab pointer" :style="{ 'background-color': styles.bgColor }"
+        <template v-if="ripple.show">
+            <div v-ripple="ripple.color == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
+                 class="fab pointer" :style="{ 'background-color': bgColor }"
             >
                 <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
             </div>
         </template>
         <template v-else>
             <div @click="toggle = !toggle"
-                 class="fab pointer" :style="{ 'background-color': styles.bgColor, 'z-index': styles.zIndex }"
+                 class="fab pointer" :style="{ 'background-color': bgColor, 'z-index': zIndex }"
             >
                 <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
             </div>
@@ -45,16 +45,20 @@
             }
         },
         props: {
-            styles: {
-                default: () => {
+            bgColor: {
+                default: '#333333',
+            },
+            position: {
+                default: 'bottom-right',
+            },
+            zIndex: {
+                default: '999',
+            },
+            ripple: {
+                default() {
                     return {
-                        bgColor: '#333333',
-                        position: 'bottom-right',
-                        zIndex: 999,
-                        ripple: {
-                            show: true,
-                            color: 'light'
-                        }
+                        show: true,
+                        color: 'light'
                     }
                 }
             },
@@ -63,7 +67,7 @@
         computed: {
             listPos() {
                 let mask = {};
-                if (this.styles.position === 'top-right' || this.styles.position === 'top-left') {
+                if (this.position === 'top-right' || this.position === 'top-left') {
                     return mask = {
                         top: '-20px',
                         paddingTop: '20px'
@@ -84,12 +88,12 @@
                 return animation.leave;
             },
             animation() {
-                if (this.styles.position === 'top-right' || this.styles.position === 'top-left') {
+                if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
                         enter: 'animated fadeInDown',
                         leave: 'animated fadeOutUp'
                     };
-                } else if (this.styles.position === 'bottom-right' || this.styles.position === 'bottom-left') {
+                } else if (this.position === 'bottom-right' || this.position === 'bottom-left') {
                     return {
                         enter: 'animated fadeInUp',
                         leave: 'animated fadeOutDown'
@@ -110,9 +114,9 @@
             away() {
                 this.toggle = false;
             },
-            position() {
+            setPosition() {
                 this.pos = {};
-                switch (this.styles.position) {
+                switch (this.position) {
                     case 'bottom-right':
                         this.pos.right = '5vw';
                         this.pos.bottom = '4vh';
@@ -135,9 +139,9 @@
                 }
             },
             moveTransition() {
-                if (this.styles.position === 'top-right' || this.styles.position === 'top-left') {
-                    let wrapper = document.getElementById(this.styles.position + '-wrapper');
-                    let el = document.getElementById(this.styles.position + '-action');
+                if (this.position === 'top-right' || this.position === 'top-left') {
+                    let wrapper = document.getElementById(this.position + '-wrapper');
+                    let el = document.getElementById(this.position + '-action');
                     wrapper.appendChild(el);
                 }
             }
@@ -146,7 +150,7 @@
             this.moveTransition();
         },
         created() {
-            this.position();
+            this.setPosition();
         }
     }
 </script>

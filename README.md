@@ -30,36 +30,38 @@ And
 
 ##  Properties
 
-`style` - Sets styles properties.
-*   Type - Object 
-
-| Properties      | Type      | Values     |
-| :--------------- | :-------  | :--------- |
-|  `bgColor`      | String    | <b>'#333333'</b><br> Accepts all color formats: HEX, RGB & RGBA |
-|  `position`     | String    | <b>Default 'bottom-left'</b> <br>'bottom-left', 'bottom-right', 'top-left','top-right'  |
-|  `zIndex`       | String    | <b>Default '999'</b> <br>Set any value that suits your needs.  |
-|  `ripple`       | Object    | Has <b>two properties</b>:   <br> -`show`: `true` or `false` <br> -`color`: `'dark'` or `'light'`|
-
-`actions` - Sets a list of actions.
-*   Type - Object 
-
-| Properties      | Type      | Values     |
-| :--------------- | :-------  | :--------- |
-|  `name`      | String    |  Name of the event. |
-|  `icon`     | String    | Icon name. <br> (Please refer to [Material icons](https://material.io/icons/))  |
+| Properties            | Type      | Values     |
+| :---------------      | :-------  | :--------- |
+|  `bg-color`           | String    | <b>Default '#333333'</b><br> Accepts all color formats: HEX, RGB & RGBA |
+|  `position`           | String    | <b>Default 'bottom-left'</b> <br>'bottom-left', 'bottom-right', 'top-left','top-right'  |
+|  `z-index`            | String    | <b>Default '999'</b> <br>Set any value that suits your needs.  |
+|  `ripple-show`        | Boolean   | <b>Default true</b> <br>Options: true or false.  |
+|  `ripple-color`       | String    | <b>Default 'light'</b> <br>Options: 'light' or 'dark'.  |
+|  `actions`            | Object    | Has <b>two properties</b>:   <br> -`name` (String) Name of the event. <br> -`icon`(String) Icon name. (Please refer to [Material icons](https://material.io/icons/))|
 
 
 ##  Examples
 
-Include the component in your .vue file, `styles` & `actions` props are required for the component to work. The `@event` has to match the name given in the `actions` prop. 
+Include the component in your .vue file, `actions` prop is required for the component to work. The `@event` has to match the name given in the `actions` prop. 
 ```
 <template>
-  <fab :styles="fabStyles"
-       :actions="fabActions"
+  <fab :actions="fabActions"
        @cache="cache"
        @alertMe="alert"
   ></fab>
 </template>
+```
+
+Either `color` and `position` are set by default but they can be changed.
+
+```
+<fab
+   :position="position"
+   :bg-color="bgColor"
+   :actions="fabActions"
+   @cache="cache"
+   @alertMe="alert"
+></fab>
 ```
 
 Match your data with your components props. The `bgColor` accepts either HEX, RBG or RGBA format.
@@ -75,9 +77,8 @@ export default {
   },
    data(){
       return {
-          fabStyles: {
-              bgColor: '#778899'
-          },
+          bgColor: '#778899',
+          position: 'top-right',
           fabActions: [
               {
                   name: 'cache',

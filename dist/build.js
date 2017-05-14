@@ -10309,13 +10309,11 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         zIndex: {
             default: '999'
         },
-        ripple: {
-            default: function _default() {
-                return {
-                    show: true,
-                    color: 'light'
-                };
-            }
+        rippleShow: {
+            default: true
+        },
+        rippleColor: {
+            default: 'light'
         },
         actions: {}
     },
@@ -10614,12 +10612,12 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     }, [_c('i', {
       staticClass: "material-icons"
     }, [_vm._v(_vm._s(action.icon))])])
-  }))])], 1), _vm._v(" "), (_vm.ripple.show) ? [_c('div', {
+  }))])], 1), _vm._v(" "), (_vm.rippleShow) ? [_c('div', {
     directives: [{
       name: "ripple",
       rawName: "v-ripple",
-      value: (_vm.ripple.color == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''),
-      expression: "ripple.color == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''"
+      value: (_vm.rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''),
+      expression: "rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''"
     }],
     staticClass: "fab pointer",
     style: ({

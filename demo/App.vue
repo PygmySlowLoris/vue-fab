@@ -1,63 +1,174 @@
 <template>
     <div id="app">
-        <img width="400px" src="./assets/logo.png">
-        <h1></h1>
-        <h2>Floating Action Button</h2>
+        <!--Example dependecies-->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.1/css/bulma.min.css">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <a :href="repoUrl"><img
+                style="position: absolute; top: 0; right: 0; border: 0;"
+                src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67"
+                alt="Fork me on GitHub"
+                data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
+
+        <!--Example Elements-->
+        <section class="hero">
+            <div class="hero-body" style="padding: 1rem 0">
+                <div class="container">
+                    <div class="columns">
+                        <div class="column is-8 is-offset-3" style="display: flex; align-items: center;">
+                            <div class="is-pulled-left">
+                                <img width="350px" src="./assets/logo.png">
+                            </div>
+                            <div class="is-pulled-left" style="text-align: left">
+                                <h1 class="title text-medium-grey" style="margin-bottom: .5rem">
+                                    Floating Action Button
+                                </h1>
+                                <hr class="is-marginless">
+                                <h2 class="subtitle text-light-grey" style="margin-top: .5rem">
+                                    A Vue Component
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" style="padding-top: .5rem">
+            <div class="container">
+                <div class="columns">
+                    <div class="column is-8 is-offset-2">
+                        <div class="box formated">
+                            <div class="heading">
+                                <div class="columns">
+                                    <div class="column">
+                                        <i class="material-icons top-left">code</i>
+                                        <span class="is-pulled-right"><b>Example</b></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="content">
+                                <div class="columns">
+                                    <div class="column">
+                                        <div class="field is-pulled-left">
+                                            <label class="label">Color</label>
+                                            <p class="control">
+                                                <chrome-picker v-model="colors"/>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="column">
+                                        <div class="field">
+                                            <label class="label is-pulled-left">Position</label>
+                                            <br/>
+                                            <p class="control">
+                                            <span class="select">
+                                              <select v-model="position">
+                                                <option v-for="pos in positions">{{pos}}</option>
+                                              </select>
+                                            </span>
+                                            </p>
+                                            <label class="label is-pulled-left">First Icon</label>
+                                            <p class="control">
+                                                <input type="text" class="input" v-model="firstIcon">
+                                            </p>
+                                            <label class="label is-pulled-left">Second Icon</label>
+                                            <p class="control">
+                                                <input type="text" class="input" v-model="secondIcon">
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="columns">
+                                    <div class="column has-text-centered">
+                                        <a :href="repoUrl">Installation & Code usage</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="content has-text-centered">
+                    <p>
+                        <strong>Floating Action Button Vue Directive</strong> by <a
+                            :href="teamUrl">Pygmy Team</a>.
+                    </p>
+                    <p>
+                        <small>Used dependencies for this demo: <a href="http://bulma.io">bulma</a> | <a
+                                href="https://github.com/xiaokaike/vue-color">vue-color</a></small>
+                    </p>
+                </div>
+            </div>
+        </footer>
         <fab
-                :actions="fabActions"
-                @cache="cache"
+                :position="position"
+                :bg-color="colors.hex"
+                :actions="[{name: 'alertMe',icon: firstIcon},{name: 'alertMe',icon: secondIcon}]"
                 @alertMe="alert"
-        ></fab>
-        <fab bg-color="#d11014"
-             position="top-left"
-             :actions="fabActions"
-             @cache="cache"
-             @alertMe="alert"
-        ></fab>
-        <fab bg-color="#119912"
-             position="bottom-left"
-             :actions="fabActions"
-             @cache="cache"
-             @alertMe="alert"
-             :ripple="{show: true,color: 'dark'}"
-        ></fab>
-        <fab bg-color="#102499"
-             position="top-right"
-             :actions="fabActions"
-             @cache="cache"
-             @alertMe="alert"
-             :ripple="{show: true,color: 'light'}"
         ></fab>
     </div>
 </template>
 
 <script>
     import FAB from '../src/FAB.vue';
+    import {Chrome} from 'vue-color';
+
+    const teamUrl = 'https://github.com/PygmySlowLoris';
+    const repoUrl = 'https://github.com/PygmySlowLoris/vue-fab';
+
+    const defaultProps = {
+        hex: '#194d33',
+        hsl: {
+            h: 150,
+            s: 0.5,
+            l: 0.2,
+            a: 1
+        },
+        hsv: {
+            h: 150,
+            s: 0.66,
+            v: 0.30,
+            a: 1
+        },
+        rgba: {
+            r: 25,
+            g: 77,
+            b: 51,
+            a: 1
+        },
+        a: 1
+    };
+
     export default {
         name: 'app',
         components: {
-            fab: FAB
+            fab: FAB,
+            'chrome-picker': Chrome
         },
         data(){
             return {
-                fabActions: [
-                    {
-                        name: 'cache',
-                        icon: 'cached'
-                    },
-                    {
-                        name: 'alertMe',
-                        icon: 'add_alert'
-                    }
-                ]
+                repoUrl: repoUrl,
+                teamUrl: teamUrl,
+                positions: [
+                    'bottom-right',
+                    'bottom-left',
+                    'top-right',
+                    'top-left',
+                ],
+                position: 'bottom-right',
+                colors: defaultProps,
+                firstIcon: 'cached',
+                secondIcon: 'add_alert'
+
             }
         },
         methods: {
-            cache(){
-                console.log('Cache Cleared');
-            },
             alert(){
-                alert('Clicked on alert icon');
+                alert('You have clicked me :)');
             }
         }
     }

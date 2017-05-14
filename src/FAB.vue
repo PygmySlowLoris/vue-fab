@@ -146,6 +146,11 @@
                 }
             }
         },
+        watch:{
+            position(val){
+                this.setPosition();
+            }
+        },
         mounted() {
             this.moveTransition();
         },

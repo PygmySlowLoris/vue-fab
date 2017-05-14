@@ -14,8 +14,8 @@
                 </ul>
             </transition>
         </div>
-        <template v-if="ripple.show">
-            <div v-ripple="ripple.color == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
+        <template v-if="rippleShow">
+            <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
                  class="fab pointer" :style="{ 'background-color': bgColor }"
             >
                 <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
@@ -54,13 +54,11 @@
             zIndex: {
                 default: '999',
             },
-            ripple: {
-                default() {
-                    return {
-                        show: true,
-                        color: 'light'
-                    }
-                }
+            rippleShow : {
+                default: true
+            },
+            rippleColor: {
+                default: 'light'
             },
             actions: {}
         },

@@ -54,7 +54,7 @@
             zIndex: {
                 default: '999',
             },
-            rippleShow : {
+            rippleShow: {
                 default: true
             },
             rippleColor: {
@@ -64,17 +64,16 @@
         },
         computed: {
             listPos() {
-                let mask = {};
+
                 if (this.position === 'top-right' || this.position === 'top-left') {
-                    return mask = {
+                    return {
                         top: '-20px',
                         paddingTop: '20px'
                     }
-                } else {
-                    return mask = {
-                        bottom: '-20px',
-                        paddingBottom: '20px'
-                    }
+                }
+                return {
+                    bottom: '-20px',
+                    paddingBottom: '20px'
                 }
             },
             transitionEnter() {
@@ -137,16 +136,23 @@
                 }
             },
             moveTransition() {
+                let wrapper = document.getElementById(this.position + '-wrapper');
+                let el = document.getElementById(this.position + '-action');
+
                 if (this.position === 'top-right' || this.position === 'top-left') {
-                    let wrapper = document.getElementById(this.position + '-wrapper');
-                    let el = document.getElementById(this.position + '-action');
                     wrapper.appendChild(el);
+                } else {
+                    wrapper.insertBefore(el, wrapper.childNodes[0]);
                 }
             }
         },
-        watch:{
+        watch: {
             position(val){
                 this.setPosition();
+
+                this.$nextTick(() => {
+                    this.moveTransition();
+                });
             }
         },
         mounted() {

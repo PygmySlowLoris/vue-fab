@@ -15,17 +15,17 @@
             </transition>
         </div>
         <template v-if="rippleShow">
-            <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
+            <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="clickFab"
                  class="fab pointer" :style="{ 'background-color': bgColor }"
             >
-                <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
+                <i class="material-icons md-36 noselect" :class="{ rotate: toggle && !simple }" v-html="iconName"></i>
             </div>
         </template>
         <template v-else>
-            <div @click="toggle = !toggle"
+            <div @click="clickFab"
                  class="fab pointer" :style="{ 'background-color': bgColor, 'z-index': zIndex }"
             >
-                <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
+                <i class="material-icons md-36 noselect" :class="{ rotate: toggle && !simple }" v-html="iconName"></i>
             </div>
         </template>
     </div>
@@ -59,6 +59,12 @@
             },
             rippleColor: {
                 default: 'light'
+            },
+            simple: {
+                default: false
+            },
+            iconName: {
+                default: 'add'
             },
             actions: {}
         },
@@ -143,6 +149,13 @@
                     wrapper.appendChild(el);
                 } else {
                     wrapper.insertBefore(el, wrapper.childNodes[0]);
+                }
+            },
+            clickFab() {
+                if (this.simple) {
+                    this.$emit('click');
+                } else {
+                    this.toggle = !this.toggle;
                 }
             }
         },
@@ -290,5 +303,14 @@
             font-size: 34px !important;
         }
 
+    }
+
+    .noselect {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
     }
 </style>

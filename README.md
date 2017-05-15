@@ -40,6 +40,8 @@ And
 |  `ripple-show`        | Boolean   | <b>Default true</b> <br>Options: true or false.  |
 |  `ripple-color`       | String    | <b>Default 'light'</b> <br>Options: 'light' or 'dark'.  |
 |  `actions`            | Object    | Has <b>two properties</b>:   <br> -`name` (String) Name of the event. <br> -`icon`(String) Icon name. (Please refer to [Material icons](https://material.io/icons/))|
+|  `icon-name`          | String    | <b>Default 'add'</b> <br> Change the main icon  |
+|  `simple`             | Boolean   | <b>Default 'false'</b> <br> Make FAB simple (Click event emit, no submenu)  |
 
 
 ##  Examples
@@ -63,6 +65,16 @@ Either `color` and `position` are set by default but they can be changed.
    :actions="fabActions"
    @cache="cache"
    @alertMe="alert"
+></fab>
+```
+
+With simple mode and different main icon
+
+```
+<fab
+   :simple="true"
+   :icon-name="cloud"
+   @click="click"
 ></fab>
 ```
 

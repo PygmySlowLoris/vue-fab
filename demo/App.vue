@@ -75,6 +75,15 @@
                                             <p class="control">
                                                 <input type="text" class="input" v-model="secondIcon">
                                             </p>
+                                            <p class="control">
+                                                <label class="checkbox">
+                                                    <input type="checkbox" v-model="simple"> Simple mode ?
+                                                </label>
+                                            </p>
+                                            <label class="label is-pulled-left">Main Icon</label>
+                                            <p class="control">
+                                                <input type="text" class="input" v-model="mainIcon">
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -106,9 +115,12 @@
         </footer>
         <fab
                 :position="position"
+                :simple="simple"
+                :icon-name="mainIcon"
                 :bg-color="colors.hex"
                 :actions="[{name: 'alertMe',icon: firstIcon},{name: 'alertMe',icon: secondIcon}]"
                 @alertMe="alert"
+                @click="alertSimple"
         ></fab>
     </div>
 </template>
@@ -161,14 +173,18 @@
                 ],
                 position: 'bottom-right',
                 colors: defaultProps,
+                mainIcon: 'add',
                 firstIcon: 'cached',
-                secondIcon: 'add_alert'
-
+                secondIcon: 'add_alert',
+                simple: false
             }
         },
         methods: {
             alert(){
                 alert('You have clicked me :)');
+            },
+            alertSimple(){
+                alert('You have clicked me and i am in simple mode :)');
             }
         }
     }

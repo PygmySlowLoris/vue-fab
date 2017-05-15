@@ -94,7 +94,7 @@
             <div class="container">
                 <div class="content has-text-centered">
                     <p>
-                        <strong>Floating Action Button Vue Directive</strong> by <a
+                        <strong>Floating Action Button Vue Component</strong> by <a
                             :href="teamUrl">Pygmy Team</a>.
                     </p>
                     <p>

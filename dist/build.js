@@ -10435,7 +10435,7 @@ exports = module.exports = __webpack_require__(1)();
 
 
 // module
-exports.push([module.i, "#app[data-v-d877a75c]{font-family:Avenir,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-align:center;color:#2c3e50;margin-top:60px}h1[data-v-d877a75c],h2[data-v-d877a75c]{font-weight:400}li[data-v-d877a75c]{display:inline-block;margin:0 10px}a[data-v-d877a75c]{color:#42b983}", ""]);
+exports.push([module.i, "#app[data-v-d877a75c]{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-align:center;color:#2c3e50}.pointer[data-v-d877a75c]{cursor:pointer}h1[data-v-d877a75c],h2[data-v-d877a75c]{font-weight:400}hr[data-v-d877a75c]{background-color:transparent;border:none;display:block;height:inherit;margin:1.5rem 0;border-top:1px dashed}li[data-v-d877a75c]{display:inline-block;margin:0 10px}a[data-v-d877a75c]{color:#0b99b9;text-decoration:underline}.text-medium-grey[data-v-d877a75c]{color:#333}.text-light-grey[data-v-d877a75c]{color:#888}.box.formated[data-v-d877a75c]{position:relative;padding:0}.box.formated .heading[data-v-d877a75c]{font-size:1rem;text-transform:capitalize;padding:.8rem 1.5rem;background-color:#fafafa}.box.formated .content[data-v-d877a75c]{padding:1rem 2rem}i.top-left[data-v-d877a75c]{position:absolute;left:1.5rem;top:.8rem}.vertical-separator[data-v-d877a75c]{display:flex;justify-content:space-around}.vertical-separator .line[data-v-d877a75c]{border-right:1px solid #ccc}", ""]);
 
 // exports
 

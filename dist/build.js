@@ -10319,18 +10319,17 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     },
     computed: {
         listPos: function listPos() {
-            var mask = {};
+
             if (this.position === 'top-right' || this.position === 'top-left') {
-                return mask = {
+                return {
                     top: '-20px',
                     paddingTop: '20px'
                 };
-            } else {
-                return mask = {
-                    bottom: '-20px',
-                    paddingBottom: '20px'
-                };
             }
+            return {
+                bottom: '-20px',
+                paddingBottom: '20px'
+            };
         },
         transitionEnter: function transitionEnter() {
             var animation = this.animation;
@@ -10392,16 +10391,25 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             }
         },
         moveTransition: function moveTransition() {
+            var wrapper = document.getElementById(this.position + '-wrapper');
+            var el = document.getElementById(this.position + '-action');
+
             if (this.position === 'top-right' || this.position === 'top-left') {
-                var wrapper = document.getElementById(this.position + '-wrapper');
-                var el = document.getElementById(this.position + '-action');
                 wrapper.appendChild(el);
+            } else {
+                wrapper.insertBefore(el, wrapper.childNodes[0]);
             }
         }
     },
     watch: {
         position: function position(val) {
+            var _this = this;
+
             this.setPosition();
+
+            this.$nextTick(function () {
+                _this.moveTransition();
+            });
         }
     },
     mounted: function mounted() {

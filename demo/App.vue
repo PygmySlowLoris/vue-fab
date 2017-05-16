@@ -25,6 +25,10 @@
                                 <hr class="is-marginless">
                                 <h2 class="subtitle text-light-grey" style="margin-top: .5rem">
                                     A Vue Component
+                                    <span class="is-pulled-right">
+                                        <!-- Place this tag where you want the button to render. -->
+<a class="github-button" href="https://github.com/PygmySlowLoris/vue-fab" data-icon="octicon-star" data-size="large" aria-label="Star PygmySlowLoris/vue-fab on GitHub">Star</a>
+                                    </span>
                                 </h2>
                             </div>
                         </div>
@@ -48,7 +52,7 @@
                             </div>
                             <div class="content">
                                 <div class="columns">
-                                    <div class="column">
+                                    <div class="column is-5" style="display: flex; justify-content: center">
                                         <div class="field is-pulled-left">
                                             <label class="label">Color</label>
                                             <p class="control">
@@ -57,20 +61,29 @@
                                         </div>
                                     </div>
                                     <div class="column">
-                                        <div class="field">
-                                            <label class="label is-pulled-left">Position</label>
-                                            <br/>
+                                        <div class="field has-text-left">
+                                            <label class="label">Position</label>
                                             <p class="control">
-                                            <span class="select">
-                                              <select v-model="position">
-                                                <option v-for="pos in positions">{{pos}}</option>
-                                              </select>
-                                            </span>
+                                                <span class="select">
+                                                  <select v-model="position">
+                                                    <option v-for="pos in positions">{{pos}}</option>
+                                                  </select>
+                                                </span>
                                             </p>
+                                        </div>
+                                        <div class="field">
+                                            <label class="label is-pulled-left">Main Icon</label>
+                                            <p class="control">
+                                                <input type="text" class="input" v-model="mainIcon">
+                                            </p>
+                                        </div>
+                                        <div class="field">
                                             <label class="label is-pulled-left">First Icon</label>
                                             <p class="control">
                                                 <input type="text" class="input" v-model="firstIcon">
                                             </p>
+                                        </div>
+                                        <div class="field">
                                             <label class="label is-pulled-left">Second Icon</label>
                                             <p class="control">
                                                 <input type="text" class="input" v-model="secondIcon">
@@ -107,6 +120,7 @@
         <fab
                 :position="position"
                 :bg-color="colors.hex"
+                :main-icon="mainIcon"
                 :actions="[{name: 'alertMe',icon: firstIcon},{name: 'alertMe',icon: secondIcon}]"
                 @alertMe="alert"
         ></fab>
@@ -161,9 +175,9 @@
                 ],
                 position: 'bottom-right',
                 colors: defaultProps,
+                mainIcon: 'add',
                 firstIcon: 'cached',
                 secondIcon: 'add_alert'
-
             }
         },
         methods: {

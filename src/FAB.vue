@@ -7,10 +7,17 @@
                         :leave-active-class="transitionLeave"
             >
                 <ul v-show="toggle" class="fab-list">
-                    <li v-for="action in actions" :style="{ 'background-color': bgColor }"
-                        @click="toParent(action.name)" class="pointer">
-                        <i class="material-icons">{{action.icon}}</i>
-                    </li>
+                    <template v-for="action in actions">
+                        <transition
+                                enter-active-class="animated quick zoomIn"
+                                leave-active-class="animated quick zoomOut"
+                        >
+                            <li v-if="toggle" :style="{ 'background-color': bgColor }"
+                                @click="toParent(action.name)" class="pointer">
+                                <i class="material-icons">{{action.icon}}</i>
+                            </li>
+                        </transition>
+                    </template>
                 </ul>
             </transition>
         </div>
@@ -18,14 +25,16 @@
             <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
                  class="fab pointer" :style="{ 'background-color': bgColor }"
             >
-                <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
+                <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
+                <i class="material-icons md-36 close" :class="{ rotate: toggle }">add</i>
             </div>
         </template>
         <template v-else>
             <div @click="toggle = !toggle"
                  class="fab pointer" :style="{ 'background-color': bgColor, 'z-index': zIndex }"
             >
-                <i class="material-icons md-36" :class="{ rotate: toggle }">add</i>
+                <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
+                <i class="material-icons md-36 close" :class="{ rotate: toggle }">add</i>
             </div>
         </template>
     </div>
@@ -60,6 +69,9 @@
             rippleColor: {
                 default: 'light'
             },
+            mainIcon: {
+                default: 'add'
+            },
             actions: {}
         },
         computed: {
@@ -87,13 +99,13 @@
             animation() {
                 if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
-                        enter: 'animated fadeInDown',
-                        leave: 'animated fadeOutUp'
+                        enter: 'animated quick fadeInDown',
+                        leave: 'animated quick fadeOutUp'
                     };
                 } else if (this.position === 'bottom-right' || this.position === 'bottom-left') {
                     return {
-                        enter: 'animated fadeInUp',
-                        leave: 'animated fadeOutDown'
+                        enter: 'animated quick fadeInUp',
+                        leave: 'animated quick fadeOutDown'
                     };
                 } else {
                     return {
@@ -165,6 +177,11 @@
 </script>
 
 <style scoped>
+    .animated.quick {
+        -webkit-animation-duration: .7s !important;
+        animation-duration: .7s !important;
+    }
+
     .fab-wrapper {
         position: fixed;
         z-index: 999;
@@ -190,10 +207,34 @@
         margin: 0px auto;
     }
 
-    .fab .material-icons.rotate {
+    .fab .material-icons.main {
+        opacity: 1;
+        position: absolute;
+        left: .9rem;
+    }
+
+    .fab .material-icons.close {
+        opacity: 0;
+        position: absolute;
+        left: .9rem;
+    }
+
+    .fab .material-icons.main.rotate {
         -ms-transform: rotate(315deg); /* IE 9 */
         -webkit-transform: rotate(315deg); /* Chrome, Safari, Opera */
         transform: rotate(315deg);
+        opacity: 0;
+        -webkit-transition: opacity .3s ease-in, -webkit-transform .4s; /* Safari */
+        transition: opacity .3s ease-in, transform .4s;
+    }
+
+    .fab .material-icons.close.rotate {
+        -ms-transform: rotate(315deg); /* IE 9 */
+        -webkit-transform: rotate(315deg); /* Chrome, Safari, Opera */
+        transform: rotate(315deg);
+        opacity: 1;
+        -webkit-transition: opacity .3s ease-in, -webkit-transform .4s; /* Safari */
+        transition: opacity .3s ease-in, transform .4s;
     }
 
     .fab-list {

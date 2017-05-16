@@ -39,6 +39,7 @@ And
 |  `z-index`            | String    | <b>Default '999'</b> <br>Set any value that suits your needs.  |
 |  `ripple-show`        | Boolean   | <b>Default true</b> <br>Options: true or false.  |
 |  `ripple-color`       | String    | <b>Default 'light'</b> <br>Options: 'light' or 'dark'.  |
+|  `main-icon`       | String    | <b>Default 'add'</b> <br>Use icons from the material icon library.  |
 |  `actions`            | Object    | Has <b>two properties</b>:   <br> -`name` (String) Name of the event. <br> -`icon`(String) Icon name. (Please refer to [Material icons](https://material.io/icons/))|
 
 

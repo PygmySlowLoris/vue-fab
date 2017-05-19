@@ -40,7 +40,8 @@ And
 |  `ripple-show`        | Boolean   | <b>Default true</b> <br>Options: true or false.  |
 |  `ripple-color`       | String    | <b>Default 'light'</b> <br>Options: 'light' or 'dark'.  |
 |  `main-icon`       | String    | <b>Default 'add'</b> <br>Use icons from the material icon library.  |
-|  `actions`            | Object    | Has <b>two properties</b>:   <br> -`name` (String) Name of the event. <br> -`icon`(String) Icon name. (Please refer to [Material icons](https://material.io/icons/))|
+|  `main-tooltip`       | String    | <b>Default `null`</b>  |
+|  `actions`            | Object    | Has <b>three properties</b>:   <br> -`name` (String) Name of the event. <br> -`icon`(String) Icon name. (Please refer to [Material icons](https://material.io/icons/)) <br> -`tooltip` (String) If not used, tooltip won't appear.|
 
 
 ##  Examples

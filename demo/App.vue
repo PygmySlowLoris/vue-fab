@@ -71,23 +71,56 @@
                                                 </span>
                                             </p>
                                         </div>
-                                        <div class="field">
-                                            <label class="label is-pulled-left">Main Icon</label>
-                                            <p class="control">
-                                                <input type="text" class="input" v-model="mainIcon">
-                                            </p>
+                                        <label class="label" style="display: flex; align-items: center; padding-right: 1rem;">
+                                            Main Icon & Tooltip
+                                        </label>
+                                        <div class="field is-horizontal">
+                                            <div class="field-body">
+                                                <div class="field">
+                                                    <p class="control">
+                                                        <input type="text" class="input" v-model="mainIcon">
+                                                    </p>
+                                                </div>
+                                                <div class="field">
+                                                    <p class="control">
+                                                        <input type="text" class="input" v-model="mainTooltip">
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="field">
-                                            <label class="label is-pulled-left">First Icon</label>
-                                            <p class="control">
-                                                <input type="text" class="input" v-model="firstIcon">
-                                            </p>
+                                        <label class="label" style="display: flex; align-items: center; padding-right: 1rem;">
+                                            First Icon & Tooltip
+                                        </label>
+                                        <div class="field is-horizontal">
+                                            <div class="field-body">
+                                                <div class="field">
+                                                    <p class="control">
+                                                        <input type="text" class="input" v-model="firstIcon">
+                                                    </p>
+                                                </div>
+                                                <div class="field">
+                                                    <p class="control">
+                                                        <input type="text" class="input" v-model="firstTooltip">
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="field">
-                                            <label class="label is-pulled-left">Second Icon</label>
-                                            <p class="control">
-                                                <input type="text" class="input" v-model="secondIcon">
-                                            </p>
+                                        <label class="label" style="display: flex; align-items: center; padding-right: 1rem;">
+                                            Second Icon & Tooltip
+                                        </label>
+                                        <div class="field is-horizontal">
+                                            <div class="field-body">
+                                                <div class="field">
+                                                    <p class="control">
+                                                        <input type="text" class="input" v-model="secondIcon">
+                                                    </p>
+                                                </div>
+                                                <div class="field">
+                                                    <p class="control">
+                                                        <input type="text" class="input" v-model="secondTooltip">
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -121,7 +154,8 @@
                 :position="position"
                 :bg-color="colors.hex"
                 :main-icon="mainIcon"
-                :actions="[{name: 'alertMe',icon: firstIcon},{name: 'alertMe',icon: secondIcon}]"
+                :main-tooltip="mainTooltip"
+                :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip}]"
                 @alertMe="alert"
         ></fab>
     </div>
@@ -176,8 +210,11 @@
                 position: 'bottom-right',
                 colors: defaultProps,
                 mainIcon: 'add',
+                mainTooltip: 'Hello',
                 firstIcon: 'cached',
-                secondIcon: 'add_alert'
+                firstTooltip: 'cached',
+                secondIcon: 'add_alert',
+                secondTooltip: 'add_alert'
             }
         },
         methods: {

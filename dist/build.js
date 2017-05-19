@@ -63,17 +63,321 @@
 /******/ 	__webpack_require__.p = "/dist/";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 6);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports) {
+
+/*
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Tobias Koppers @sokra
+*/
+// css base code, injected by the css-loader
+module.exports = function() {
+	var list = [];
+
+	// return the list of modules as css string
+	list.toString = function toString() {
+		var result = [];
+		for(var i = 0; i < this.length; i++) {
+			var item = this[i];
+			if(item[2]) {
+				result.push("@media " + item[2] + "{" + item[1] + "}");
+			} else {
+				result.push(item[1]);
+			}
+		}
+		return result.join("");
+	};
+
+	// import a list of modules into the list
+	list.i = function(modules, mediaQuery) {
+		if(typeof modules === "string")
+			modules = [[null, modules, ""]];
+		var alreadyImportedModules = {};
+		for(var i = 0; i < this.length; i++) {
+			var id = this[i][0];
+			if(typeof id === "number")
+				alreadyImportedModules[id] = true;
+		}
+		for(i = 0; i < modules.length; i++) {
+			var item = modules[i];
+			// skip already imported module
+			// this implementation is not 100% perfect for weird media query combinations
+			//  when a module is imported multiple times with different media queries.
+			//  I hope this will never occur (Hey this way we have smaller bundles)
+			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+				if(mediaQuery && !item[2]) {
+					item[2] = mediaQuery;
+				} else if(mediaQuery) {
+					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+				}
+				list.push(item);
+			}
+		}
+	};
+	return list;
+};
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/*
+  MIT License http://www.opensource.org/licenses/mit-license.php
+  Author Tobias Koppers @sokra
+  Modified by Evan You @yyx990803
+*/
+
+var hasDocument = typeof document !== 'undefined'
+
+if (typeof DEBUG !== 'undefined' && DEBUG) {
+  if (!hasDocument) {
+    throw new Error(
+    'vue-style-loader cannot be used in a non-browser environment. ' +
+    "Use { target: 'node' } in your Webpack config to indicate a server-rendering environment."
+  ) }
+}
+
+var listToStyles = __webpack_require__(25)
+
+/*
+type StyleObject = {
+  id: number;
+  parts: Array<StyleObjectPart>
+}
+
+type StyleObjectPart = {
+  css: string;
+  media: string;
+  sourceMap: ?string
+}
+*/
+
+var stylesInDom = {/*
+  [id: number]: {
+    id: number,
+    refs: number,
+    parts: Array<(obj?: StyleObjectPart) => void>
+  }
+*/}
+
+var head = hasDocument && (document.head || document.getElementsByTagName('head')[0])
+var singletonElement = null
+var singletonCounter = 0
+var isProduction = false
+var noop = function () {}
+
+// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+// tags it will allow on a page
+var isOldIE = typeof navigator !== 'undefined' && /msie [6-9]\b/.test(navigator.userAgent.toLowerCase())
+
+module.exports = function (parentId, list, _isProduction) {
+  isProduction = _isProduction
+
+  var styles = listToStyles(parentId, list)
+  addStylesToDom(styles)
+
+  return function update (newList) {
+    var mayRemove = []
+    for (var i = 0; i < styles.length; i++) {
+      var item = styles[i]
+      var domStyle = stylesInDom[item.id]
+      domStyle.refs--
+      mayRemove.push(domStyle)
+    }
+    if (newList) {
+      styles = listToStyles(parentId, newList)
+      addStylesToDom(styles)
+    } else {
+      styles = []
+    }
+    for (var i = 0; i < mayRemove.length; i++) {
+      var domStyle = mayRemove[i]
+      if (domStyle.refs === 0) {
+        for (var j = 0; j < domStyle.parts.length; j++) {
+          domStyle.parts[j]()
+        }
+        delete stylesInDom[domStyle.id]
+      }
+    }
+  }
+}
+
+function addStylesToDom (styles /* Array<StyleObject> */) {
+  for (var i = 0; i < styles.length; i++) {
+    var item = styles[i]
+    var domStyle = stylesInDom[item.id]
+    if (domStyle) {
+      domStyle.refs++
+      for (var j = 0; j < domStyle.parts.length; j++) {
+        domStyle.parts[j](item.parts[j])
+      }
+      for (; j < item.parts.length; j++) {
+        domStyle.parts.push(addStyle(item.parts[j]))
+      }
+      if (domStyle.parts.length > item.parts.length) {
+        domStyle.parts.length = item.parts.length
+      }
+    } else {
+      var parts = []
+      for (var j = 0; j < item.parts.length; j++) {
+        parts.push(addStyle(item.parts[j]))
+      }
+      stylesInDom[item.id] = { id: item.id, refs: 1, parts: parts }
+    }
+  }
+}
+
+function createStyleElement () {
+  var styleElement = document.createElement('style')
+  styleElement.type = 'text/css'
+  head.appendChild(styleElement)
+  return styleElement
+}
+
+function addStyle (obj /* StyleObjectPart */) {
+  var update, remove
+  var styleElement = document.querySelector('style[data-vue-ssr-id~="' + obj.id + '"]')
+
+  if (styleElement) {
+    if (isProduction) {
+      // has SSR styles and in production mode.
+      // simply do nothing.
+      return noop
+    } else {
+      // has SSR styles but in dev mode.
+      // for some reason Chrome can't handle source map in server-rendered
+      // style tags - source maps in <style> only works if the style tag is
+      // created and inserted dynamically. So we remove the server rendered
+      // styles and inject new ones.
+      styleElement.parentNode.removeChild(styleElement)
+    }
+  }
+
+  if (isOldIE) {
+    // use singleton mode for IE9.
+    var styleIndex = singletonCounter++
+    styleElement = singletonElement || (singletonElement = createStyleElement())
+    update = applyToSingletonTag.bind(null, styleElement, styleIndex, false)
+    remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
+  } else {
+    // use multi-style-tag mode in all other cases
+    styleElement = createStyleElement()
+    update = applyToTag.bind(null, styleElement)
+    remove = function () {
+      styleElement.parentNode.removeChild(styleElement)
+    }
+  }
+
+  update(obj)
+
+  return function updateStyle (newObj /* StyleObjectPart */) {
+    if (newObj) {
+      if (newObj.css === obj.css &&
+          newObj.media === obj.media &&
+          newObj.sourceMap === obj.sourceMap) {
+        return
+      }
+      update(obj = newObj)
+    } else {
+      remove()
+    }
+  }
+}
+
+var replaceText = (function () {
+  var textStore = []
+
+  return function (index, replacement) {
+    textStore[index] = replacement
+    return textStore.filter(Boolean).join('\n')
+  }
+})()
+
+function applyToSingletonTag (styleElement, index, remove, obj) {
+  var css = remove ? '' : obj.css
+
+  if (styleElement.styleSheet) {
+    styleElement.styleSheet.cssText = replaceText(index, css)
+  } else {
+    var cssNode = document.createTextNode(css)
+    var childNodes = styleElement.childNodes
+    if (childNodes[index]) styleElement.removeChild(childNodes[index])
+    if (childNodes.length) {
+      styleElement.insertBefore(cssNode, childNodes[index])
+    } else {
+      styleElement.appendChild(cssNode)
+    }
+  }
+}
+
+function applyToTag (styleElement, obj) {
+  var css = obj.css
+  var media = obj.media
+  var sourceMap = obj.sourceMap
+
+  if (media) {
+    styleElement.setAttribute('media', media)
+  }
+
+  if (sourceMap) {
+    // https://developer.chrome.com/devtools/docs/javascript-debugging
+    // this makes source maps inside style tags work properly in Chrome
+    css += '\n/*# sourceURL=' + sourceMap.sources[0] + ' */'
+    // http://stackoverflow.com/a/26603875
+    css += '\n/*# sourceMappingURL=data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + ' */'
+  }
+
+  if (styleElement.styleSheet) {
+    styleElement.styleSheet.cssText = css
+  } else {
+    while (styleElement.firstChild) {
+      styleElement.removeChild(styleElement.firstChild)
+    }
+    styleElement.appendChild(document.createTextNode(css))
+  }
+}
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+/* 3 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(global) {Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/*!
- * Vue.js v2.3.0
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* WEBPACK VAR INJECTION */(function(global) {/*!
+ * Vue.js v2.3.3
  * (c) 2014-2017 Evan You
  * Released under the MIT License.
  */
@@ -93,6 +397,9 @@ function isTrue (v) {
   return v === true
 }
 
+function isFalse (v) {
+  return v === false
+}
 /**
  * Check if value is primitive
  */
@@ -109,24 +416,24 @@ function isObject (obj) {
   return obj !== null && typeof obj === 'object'
 }
 
-var toString = Object.prototype.toString;
+var _toString = Object.prototype.toString;
 
 /**
  * Strict object type check. Only returns true
  * for plain JavaScript objects.
  */
 function isPlainObject (obj) {
-  return toString.call(obj) === '[object Object]'
+  return _toString.call(obj) === '[object Object]'
 }
 
 function isRegExp (v) {
-  return toString.call(v) === '[object RegExp]'
+  return _toString.call(v) === '[object RegExp]'
 }
 
 /**
  * Convert a value to a string that is actually rendered.
  */
-function _toString (val) {
+function toString (val) {
   return val == null
     ? ''
     : typeof val === 'object'
@@ -487,9 +794,11 @@ function parsePath (path) {
   }
 }
 
+/*  */
+
 var warn = noop;
 var tip = noop;
-var formatComponentName;
+var formatComponentName = (null); // work around flow check
 
 if (false) {
   var hasConsole = typeof console !== 'undefined';
@@ -577,6 +886,8 @@ if (false) {
     }
   };
 }
+
+/*  */
 
 function handleError (err, vm, info) {
   if (config.errorHandler) {
@@ -1484,7 +1795,8 @@ function getPropDefaultValue (vm, prop, key) {
   // return previous default value to avoid unnecessary watcher trigger
   if (vm && vm.$options.propsData &&
     vm.$options.propsData[key] === undefined &&
-    vm._props[key] !== undefined) {
+    vm._props[key] !== undefined
+  ) {
     return vm._props[key]
   }
   // call factory function for non-Function types
@@ -1589,6 +1901,8 @@ function isType (type, fn) {
   /* istanbul ignore next */
   return false
 }
+
+/*  */
 
 var mark;
 var measure;
@@ -1756,6 +2070,7 @@ function cloneVNode (vnode) {
   cloned.ns = vnode.ns;
   cloned.isStatic = vnode.isStatic;
   cloned.key = vnode.key;
+  cloned.isComment = vnode.isComment;
   cloned.isCloned = true;
   return cloned
 }
@@ -1974,6 +2289,10 @@ function normalizeChildren (children) {
       : undefined
 }
 
+function isTextNode (node) {
+  return isDef(node) && isDef(node.text) && isFalse(node.isComment)
+}
+
 function normalizeArrayChildren (children, nestedIndex) {
   var res = [];
   var i, c, last;
@@ -1985,19 +2304,26 @@ function normalizeArrayChildren (children, nestedIndex) {
     if (Array.isArray(c)) {
       res.push.apply(res, normalizeArrayChildren(c, ((nestedIndex || '') + "_" + i)));
     } else if (isPrimitive(c)) {
-      if (isDef(last) && isDef(last.text)) {
+      if (isTextNode(last)) {
+        // merge adjacent text nodes
+        // this is necessary for SSR hydration because text nodes are
+        // essentially merged when rendered to HTML strings
         (last).text += String(c);
       } else if (c !== '') {
         // convert primitive to vnode
         res.push(createTextVNode(c));
       }
     } else {
-      if (isDef(c.text) && isDef(last) && isDef(last.text)) {
+      if (isTextNode(c) && isTextNode(last)) {
+        // merge adjacent text nodes
         res[res.length - 1] = createTextVNode(last.text + c.text);
       } else {
         // default key for nested array children (likely generated by v-for)
-        if (isDef(c.tag) && isUndef(c.key) && isDef(nestedIndex)) {
-          c.key = "__vlist" + ((nestedIndex)) + "_" + i + "__";
+        if (isTrue(children._isVList) &&
+          isDef(c.tag) &&
+          isUndef(c.key) &&
+          isDef(nestedIndex)) {
+          c.key = "__vlist" + nestedIndex + "_" + i + "__";
         }
         res.push(c);
       }
@@ -2096,11 +2422,13 @@ function resolveAsyncComponent (
 
         if (isDef(res.timeout)) {
           setTimeout(function () {
-            reject(
-               false
-                ? ("timeout (" + (res.timeout) + "ms)")
-                : null
-            );
+            if (isUndef(factory.resolved)) {
+              reject(
+                 false
+                  ? ("timeout (" + (res.timeout) + "ms)")
+                  : null
+              );
+            }
           }, res.timeout);
         }
       }
@@ -2279,7 +2607,8 @@ function resolveSlots (
     // named slots should only be respected if the vnode was rendered in the
     // same context.
     if ((child.context === context || child.functionalContext === context) &&
-        child.data && child.data.slot != null) {
+      child.data && child.data.slot != null
+    ) {
       var name = child.data.slot;
       var slot = (slots[name] || (slots[name] = []));
       if (child.tag === 'template') {
@@ -2303,11 +2632,16 @@ function isWhitespace (node) {
 }
 
 function resolveScopedSlots (
-  fns
+  fns, // see flow/vnode
+  res
 ) {
-  var res = {};
+  res = res || {};
   for (var i = 0; i < fns.length; i++) {
-    res[fns[i][0]] = fns[i][1];
+    if (Array.isArray(fns[i])) {
+      resolveScopedSlots(fns[i], res);
+    } else {
+      res[fns[i].key] = fns[i].fn;
+    }
   }
   return res
 }
@@ -2625,7 +2959,7 @@ var index = 0;
  * Reset the scheduler's state.
  */
 function resetSchedulerState () {
-  queue.length = activatedChildren.length = 0;
+  index = queue.length = activatedChildren.length = 0;
   has = {};
   if (false) {
     circular = {};
@@ -2735,10 +3069,10 @@ function queueWatcher (watcher) {
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
       var i = queue.length - 1;
-      while (i >= 0 && queue[i].id > watcher.id) {
+      while (i > index && queue[i].id > watcher.id) {
         i--;
       }
-      queue.splice(Math.max(i, index) + 1, 0, watcher);
+      queue.splice(i + 1, 0, watcher);
     }
     // queue the flush
     if (!waiting) {
@@ -3347,7 +3681,7 @@ function createFunctionalComponent (
   var propOptions = Ctor.options.props;
   if (isDef(propOptions)) {
     for (var key in propOptions) {
-      props[key] = validateProp(key, propOptions, propsData);
+      props[key] = validateProp(key, propOptions, propsData || {});
     }
   } else {
     if (isDef(data.attrs)) { mergeProps(props, data.attrs); }
@@ -3368,6 +3702,7 @@ function createFunctionalComponent (
   });
   if (vnode instanceof VNode) {
     vnode.functionalContext = context;
+    vnode.functionalOptions = Ctor.options;
     if (data.slot) {
       (vnode.data || (vnode.data = {})).slot = data.slot;
     }
@@ -3640,7 +3975,8 @@ function _createElement (
   }
   // support single function children as default scoped slot
   if (Array.isArray(children) &&
-      typeof children[0] === 'function') {
+    typeof children[0] === 'function'
+  ) {
     data = data || {};
     data.scopedSlots = { default: children[0] };
     children.length = 0;
@@ -3676,7 +4012,7 @@ function _createElement (
     // direct component options / constructor
     vnode = createComponent(tag, data, context, children);
   }
-  if (vnode !== undefined) {
+  if (isDef(vnode)) {
     if (ns) { applyNS(vnode, ns); }
     return vnode
   } else {
@@ -3690,7 +4026,7 @@ function applyNS (vnode, ns) {
     // use default namespace inside foreignObject
     return
   }
-  if (Array.isArray(vnode.children)) {
+  if (isDef(vnode.children)) {
     for (var i = 0, l = vnode.children.length; i < l; i++) {
       var child = vnode.children[i];
       if (isDef(child.tag) && isUndef(child.ns)) {
@@ -3727,6 +4063,9 @@ function renderList (
       key = keys[i];
       ret[i] = render(val[key], key, i);
     }
+  }
+  if (isDef(ret)) {
+    (ret)._isVList = true;
   }
   return ret
 }
@@ -3974,7 +4313,7 @@ function renderMixin (Vue) {
   // code size.
   Vue.prototype._o = markOnce;
   Vue.prototype._n = toNumber;
-  Vue.prototype._s = _toString;
+  Vue.prototype._s = toString;
   Vue.prototype._l = renderList;
   Vue.prototype._t = renderSlot;
   Vue.prototype._q = looseEqual;
@@ -4126,7 +4465,8 @@ function dedupe (latest, extended, sealed) {
 }
 
 function Vue$3 (options) {
-  if (false) {
+  if (false
+  ) {
     warn('Vue is a constructor and should be called with the `new` keyword');
   }
   this._init(options);
@@ -4144,7 +4484,7 @@ function initUse (Vue) {
   Vue.use = function (plugin) {
     /* istanbul ignore if */
     if (plugin.installed) {
-      return
+      return this
     }
     // additional parameters
     var args = toArray(arguments, 1);
@@ -4164,6 +4504,7 @@ function initUse (Vue) {
 function initMixin$1 (Vue) {
   Vue.mixin = function (mixin) {
     this.options = mergeOptions(this.options, mixin);
+    return this
   };
 }
 
@@ -4455,7 +4796,14 @@ Object.defineProperty(Vue$3.prototype, '$isServer', {
   get: isServerRendering
 });
 
-Vue$3.version = '2.3.0';
+Object.defineProperty(Vue$3.prototype, '$ssrContext', {
+  get: function get () {
+    /* istanbul ignore next */
+    return this.$vnode.ssrContext
+  }
+});
+
+Vue$3.version = '2.3.3';
 
 /*  */
 
@@ -5036,8 +5384,9 @@ function createPatchFunction (backend) {
     }
     // for slot content they should also get the scopeId from the host instance.
     if (isDef(i = activeInstance) &&
-        i !== vnode.context &&
-        isDef(i = i.$options._scopeId)) {
+      i !== vnode.context &&
+      isDef(i = i.$options._scopeId)
+    ) {
       nodeOps.setAttribute(vnode.elm, i, '');
     }
   }
@@ -5189,9 +5538,10 @@ function createPatchFunction (backend) {
     // if the new node is not cloned it means the render functions have been
     // reset by the hot-reload-api and we need to do a proper re-render.
     if (isTrue(vnode.isStatic) &&
-        isTrue(oldVnode.isStatic) &&
-        vnode.key === oldVnode.key &&
-        (isTrue(vnode.isCloned) || isTrue(vnode.isOnce))) {
+      isTrue(oldVnode.isStatic) &&
+      vnode.key === oldVnode.key &&
+      (isTrue(vnode.isCloned) || isTrue(vnode.isOnce))
+    ) {
       vnode.elm = oldVnode.elm;
       vnode.componentInstance = oldVnode.componentInstance;
       return
@@ -5281,7 +5631,8 @@ function createPatchFunction (backend) {
           // if childNode is not null, it means the actual childNodes list is
           // longer than the virtual children list.
           if (!childrenMatch || childNode) {
-            if (false) {
+            if (false
+            ) {
               bailed = true;
               console.warn('Parent: ', elm);
               console.warn('Mismatching childNodes vs. VNodes: ', elm.childNodes, children);
@@ -6255,7 +6606,7 @@ function updateDOMProps (oldVnode, vnode) {
       // non-string values will be stringified
       elm._value = cur;
       // avoid resetting cursor position when value is the same
-      var strCur = cur == null ? '' : String(cur);
+      var strCur = isUndef(cur) ? '' : String(cur);
       if (shouldUpdateValue(elm, vnode, strCur)) {
         elm.value = strCur;
       }
@@ -6417,7 +6768,8 @@ function updateStyle (oldVnode, vnode) {
   var oldData = oldVnode.data;
 
   if (isUndef(data.staticStyle) && isUndef(data.style) &&
-      isUndef(oldData.staticStyle) && isUndef(oldData.style)) {
+    isUndef(oldData.staticStyle) && isUndef(oldData.style)
+  ) {
     return
   }
 
@@ -6555,12 +6907,14 @@ var animationEndEvent = 'animationend';
 if (hasTransition) {
   /* istanbul ignore if */
   if (window.ontransitionend === undefined &&
-    window.onwebkittransitionend !== undefined) {
+    window.onwebkittransitionend !== undefined
+  ) {
     transitionProp = 'WebkitTransition';
     transitionEndEvent = 'webkitTransitionEnd';
   }
   if (window.onanimationend === undefined &&
-    window.onwebkitanimationend !== undefined) {
+    window.onwebkitanimationend !== undefined
+  ) {
     animationProp = 'WebkitAnimation';
     animationEndEvent = 'webkitAnimationEnd';
   }
@@ -6707,24 +7061,23 @@ function enter (vnode, toggleDisplay) {
     return
   }
 
-  var ref = (data);
-  var css = ref.css;
-  var type = ref.type;
-  var enterClass = ref.enterClass;
-  var enterToClass = ref.enterToClass;
-  var enterActiveClass = ref.enterActiveClass;
-  var appearClass = ref.appearClass;
-  var appearToClass = ref.appearToClass;
-  var appearActiveClass = ref.appearActiveClass;
-  var beforeEnter = ref.beforeEnter;
-  var enter = ref.enter;
-  var afterEnter = ref.afterEnter;
-  var enterCancelled = ref.enterCancelled;
-  var beforeAppear = ref.beforeAppear;
-  var appear = ref.appear;
-  var afterAppear = ref.afterAppear;
-  var appearCancelled = ref.appearCancelled;
-  var duration = ref.duration;
+  var css = data.css;
+  var type = data.type;
+  var enterClass = data.enterClass;
+  var enterToClass = data.enterToClass;
+  var enterActiveClass = data.enterActiveClass;
+  var appearClass = data.appearClass;
+  var appearToClass = data.appearToClass;
+  var appearActiveClass = data.appearActiveClass;
+  var beforeEnter = data.beforeEnter;
+  var enter = data.enter;
+  var afterEnter = data.afterEnter;
+  var enterCancelled = data.enterCancelled;
+  var beforeAppear = data.beforeAppear;
+  var appear = data.appear;
+  var afterAppear = data.afterAppear;
+  var appearCancelled = data.appearCancelled;
+  var duration = data.duration;
 
   // activeInstance will always be the <transition> component managing this
   // transition. One edge case to check is when the <transition> is placed
@@ -6801,8 +7154,9 @@ function enter (vnode, toggleDisplay) {
       var parent = el.parentNode;
       var pendingNode = parent && parent._pending && parent._pending[vnode.key];
       if (pendingNode &&
-          pendingNode.tag === vnode.tag &&
-          pendingNode.elm._leaveCb) {
+        pendingNode.tag === vnode.tag &&
+        pendingNode.elm._leaveCb
+      ) {
         pendingNode.elm._leaveCb();
       }
       enterHook && enterHook(el, cb);
@@ -6856,18 +7210,17 @@ function leave (vnode, rm) {
     return
   }
 
-  var ref = (data);
-  var css = ref.css;
-  var type = ref.type;
-  var leaveClass = ref.leaveClass;
-  var leaveToClass = ref.leaveToClass;
-  var leaveActiveClass = ref.leaveActiveClass;
-  var beforeLeave = ref.beforeLeave;
-  var leave = ref.leave;
-  var afterLeave = ref.afterLeave;
-  var leaveCancelled = ref.leaveCancelled;
-  var delayLeave = ref.delayLeave;
-  var duration = ref.duration;
+  var css = data.css;
+  var type = data.type;
+  var leaveClass = data.leaveClass;
+  var leaveToClass = data.leaveToClass;
+  var leaveActiveClass = data.leaveActiveClass;
+  var beforeLeave = data.beforeLeave;
+  var leave = data.leave;
+  var afterLeave = data.afterLeave;
+  var leaveCancelled = data.leaveCancelled;
+  var delayLeave = data.delayLeave;
+  var duration = data.duration;
 
   var expectsCSS = css !== false && !isIE9;
   var userWantsControl = getHookArgumentsLength(leave);
@@ -6915,7 +7268,7 @@ function leave (vnode, rm) {
     }
     // record leaving element
     if (!vnode.data.show) {
-      (el.parentNode._pending || (el.parentNode._pending = {}))[vnode.key] = vnode;
+      (el.parentNode._pending || (el.parentNode._pending = {}))[(vnode.key)] = vnode;
     }
     beforeLeave && beforeLeave(el);
     if (expectsCSS) {
@@ -7136,6 +7489,8 @@ function onCompositionStart (e) {
 }
 
 function onCompositionEnd (e) {
+  // prevent triggering an input event for no reason
+  if (!e.target.composing) { return }
   e.target.composing = false;
   trigger(e.target, 'input');
 }
@@ -7317,7 +7672,8 @@ var Transition = {
     var mode = this.mode;
 
     // warn invalid mode
-    if (false) {
+    if (false
+    ) {
       warn(
         'invalid <transition> mode: ' + mode,
         this.$parent
@@ -7600,7 +7956,8 @@ setTimeout(function () {
       );
     }
   }
-  if (false) {
+  if (false
+  ) {
     console[console.info ? 'info' : 'log'](
       "You are running Vue in development mode.\n" +
       "Make sure to turn on production mode when deploying for production.\n" +
@@ -7932,7 +8289,8 @@ function parseHTML (html, options) {
     if (pos >= 0) {
       // Close all the open elements, up the stack
       for (var i = stack.length - 1; i >= pos; i--) {
-        if (false) {
+        if (false
+        ) {
           options.warn(
             ("tag <" + (stack[i].tag) + "> has no matching end tag.")
           );
@@ -8227,8 +8585,9 @@ function parse (
       // IE textarea placeholder bug
       /* istanbul ignore if */
       if (isIE &&
-          currentParent.tag === 'textarea' &&
-          currentParent.attrsMap.placeholder === text) {
+        currentParent.tag === 'textarea' &&
+        currentParent.attrsMap.placeholder === text
+      ) {
         return
       }
       var children = currentParent.children;
@@ -8731,15 +9090,15 @@ var modifierCode = {
 
 function genHandlers (
   events,
-  native,
+  isNative,
   warn
 ) {
-  var res = native ? 'nativeOn:{' : 'on:{';
+  var res = isNative ? 'nativeOn:{' : 'on:{';
   for (var name in events) {
     var handler = events[name];
     // #5330: warn click.right, since right clicks do not actually fire click events.
     if (false
-      ) {
+    ) {
       warn(
         "Use \"contextmenu\" instead of \"click.right\" since right clicks " +
         "do not actually fire \"click\" events."
@@ -9091,10 +9450,25 @@ function genScopedSlots (slots) {
 }
 
 function genScopedSlot (key, el) {
-  return "[" + key + ",function(" + (String(el.attrsMap.scope)) + "){" +
+  if (el.for && !el.forProcessed) {
+    return genForScopedSlot(key, el)
+  }
+  return "{key:" + key + ",fn:function(" + (String(el.attrsMap.scope)) + "){" +
     "return " + (el.tag === 'template'
       ? genChildren(el) || 'void 0'
-      : genElement(el)) + "}]"
+      : genElement(el)) + "}}"
+}
+
+function genForScopedSlot (key, el) {
+  var exp = el.for;
+  var alias = el.alias;
+  var iterator1 = el.iterator1 ? ("," + (el.iterator1)) : '';
+  var iterator2 = el.iterator2 ? ("," + (el.iterator2)) : '';
+  el.forProcessed = true; // avoid recursion
+  return "_l((" + exp + ")," +
+    "function(" + alias + iterator1 + iterator2 + "){" +
+      "return " + (genScopedSlot(key, el)) +
+    '})'
 }
 
 function genChildren (el, checkSkip) {
@@ -9103,9 +9477,10 @@ function genChildren (el, checkSkip) {
     var el$1 = children[0];
     // optimize single v-for
     if (children.length === 1 &&
-        el$1.for &&
-        el$1.tag !== 'template' &&
-        el$1.tag !== 'slot') {
+      el$1.for &&
+      el$1.tag !== 'template' &&
+      el$1.tag !== 'slot'
+    ) {
       return genElement(el$1)
     }
     var normalizationType = checkSkip ? getNormalizationType(children) : 0;
@@ -9675,66 +10050,10 @@ Vue$3.compile = compileToFunctions;
 
 /* harmony default export */ __webpack_exports__["default"] = (Vue$3);
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(20)))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(2)))
 
 /***/ }),
-/* 1 */
-/***/ (function(module, exports) {
-
-/*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Author Tobias Koppers @sokra
-*/
-// css base code, injected by the css-loader
-module.exports = function() {
-	var list = [];
-
-	// return the list of modules as css string
-	list.toString = function toString() {
-		var result = [];
-		for(var i = 0; i < this.length; i++) {
-			var item = this[i];
-			if(item[2]) {
-				result.push("@media " + item[2] + "{" + item[1] + "}");
-			} else {
-				result.push(item[1]);
-			}
-		}
-		return result.join("");
-	};
-
-	// import a list of modules into the list
-	list.i = function(modules, mediaQuery) {
-		if(typeof modules === "string")
-			modules = [[null, modules, ""]];
-		var alreadyImportedModules = {};
-		for(var i = 0; i < this.length; i++) {
-			var id = this[i][0];
-			if(typeof id === "number")
-				alreadyImportedModules[id] = true;
-		}
-		for(i = 0; i < modules.length; i++) {
-			var item = modules[i];
-			// skip already imported module
-			// this implementation is not 100% perfect for weird media query combinations
-			//  when a module is imported multiple times with different media queries.
-			//  I hope this will never occur (Hey this way we have smaller bundles)
-			if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
-				if(mediaQuery && !item[2]) {
-					item[2] = mediaQuery;
-				} else if(mediaQuery) {
-					item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
-				}
-				list.push(item);
-			}
-		}
-	};
-	return list;
-};
-
-
-/***/ }),
-/* 2 */
+/* 4 */
 /***/ (function(module, exports) {
 
 // this module is a runtime utility for cleaner component module output and will
@@ -9791,239 +10110,18 @@ module.exports = function normalizeComponent (
 
 
 /***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/*
-  MIT License http://www.opensource.org/licenses/mit-license.php
-  Author Tobias Koppers @sokra
-  Modified by Evan You @yyx990803
-*/
-
-var hasDocument = typeof document !== 'undefined'
-
-if (typeof DEBUG !== 'undefined' && DEBUG) {
-  if (!hasDocument) {
-    throw new Error(
-    'vue-style-loader cannot be used in a non-browser environment. ' +
-    "Use { target: 'node' } in your Webpack config to indicate a server-rendering environment."
-  ) }
-}
-
-var listToStyles = __webpack_require__(19)
-
-/*
-type StyleObject = {
-  id: number;
-  parts: Array<StyleObjectPart>
-}
-
-type StyleObjectPart = {
-  css: string;
-  media: string;
-  sourceMap: ?string
-}
-*/
-
-var stylesInDom = {/*
-  [id: number]: {
-    id: number,
-    refs: number,
-    parts: Array<(obj?: StyleObjectPart) => void>
-  }
-*/}
-
-var head = hasDocument && (document.head || document.getElementsByTagName('head')[0])
-var singletonElement = null
-var singletonCounter = 0
-var isProduction = false
-var noop = function () {}
-
-// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-// tags it will allow on a page
-var isOldIE = typeof navigator !== 'undefined' && /msie [6-9]\b/.test(navigator.userAgent.toLowerCase())
-
-module.exports = function (parentId, list, _isProduction) {
-  isProduction = _isProduction
-
-  var styles = listToStyles(parentId, list)
-  addStylesToDom(styles)
-
-  return function update (newList) {
-    var mayRemove = []
-    for (var i = 0; i < styles.length; i++) {
-      var item = styles[i]
-      var domStyle = stylesInDom[item.id]
-      domStyle.refs--
-      mayRemove.push(domStyle)
-    }
-    if (newList) {
-      styles = listToStyles(parentId, newList)
-      addStylesToDom(styles)
-    } else {
-      styles = []
-    }
-    for (var i = 0; i < mayRemove.length; i++) {
-      var domStyle = mayRemove[i]
-      if (domStyle.refs === 0) {
-        for (var j = 0; j < domStyle.parts.length; j++) {
-          domStyle.parts[j]()
-        }
-        delete stylesInDom[domStyle.id]
-      }
-    }
-  }
-}
-
-function addStylesToDom (styles /* Array<StyleObject> */) {
-  for (var i = 0; i < styles.length; i++) {
-    var item = styles[i]
-    var domStyle = stylesInDom[item.id]
-    if (domStyle) {
-      domStyle.refs++
-      for (var j = 0; j < domStyle.parts.length; j++) {
-        domStyle.parts[j](item.parts[j])
-      }
-      for (; j < item.parts.length; j++) {
-        domStyle.parts.push(addStyle(item.parts[j]))
-      }
-      if (domStyle.parts.length > item.parts.length) {
-        domStyle.parts.length = item.parts.length
-      }
-    } else {
-      var parts = []
-      for (var j = 0; j < item.parts.length; j++) {
-        parts.push(addStyle(item.parts[j]))
-      }
-      stylesInDom[item.id] = { id: item.id, refs: 1, parts: parts }
-    }
-  }
-}
-
-function createStyleElement () {
-  var styleElement = document.createElement('style')
-  styleElement.type = 'text/css'
-  head.appendChild(styleElement)
-  return styleElement
-}
-
-function addStyle (obj /* StyleObjectPart */) {
-  var update, remove
-  var styleElement = document.querySelector('style[data-vue-ssr-id~="' + obj.id + '"]')
-
-  if (styleElement) {
-    if (isProduction) {
-      // has SSR styles and in production mode.
-      // simply do nothing.
-      return noop
-    } else {
-      // has SSR styles but in dev mode.
-      // for some reason Chrome can't handle source map in server-rendered
-      // style tags - source maps in <style> only works if the style tag is
-      // created and inserted dynamically. So we remove the server rendered
-      // styles and inject new ones.
-      styleElement.parentNode.removeChild(styleElement)
-    }
-  }
-
-  if (isOldIE) {
-    // use singleton mode for IE9.
-    var styleIndex = singletonCounter++
-    styleElement = singletonElement || (singletonElement = createStyleElement())
-    update = applyToSingletonTag.bind(null, styleElement, styleIndex, false)
-    remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
-  } else {
-    // use multi-style-tag mode in all other cases
-    styleElement = createStyleElement()
-    update = applyToTag.bind(null, styleElement)
-    remove = function () {
-      styleElement.parentNode.removeChild(styleElement)
-    }
-  }
-
-  update(obj)
-
-  return function updateStyle (newObj /* StyleObjectPart */) {
-    if (newObj) {
-      if (newObj.css === obj.css &&
-          newObj.media === obj.media &&
-          newObj.sourceMap === obj.sourceMap) {
-        return
-      }
-      update(obj = newObj)
-    } else {
-      remove()
-    }
-  }
-}
-
-var replaceText = (function () {
-  var textStore = []
-
-  return function (index, replacement) {
-    textStore[index] = replacement
-    return textStore.filter(Boolean).join('\n')
-  }
-})()
-
-function applyToSingletonTag (styleElement, index, remove, obj) {
-  var css = remove ? '' : obj.css
-
-  if (styleElement.styleSheet) {
-    styleElement.styleSheet.cssText = replaceText(index, css)
-  } else {
-    var cssNode = document.createTextNode(css)
-    var childNodes = styleElement.childNodes
-    if (childNodes[index]) styleElement.removeChild(childNodes[index])
-    if (childNodes.length) {
-      styleElement.insertBefore(cssNode, childNodes[index])
-    } else {
-      styleElement.appendChild(cssNode)
-    }
-  }
-}
-
-function applyToTag (styleElement, obj) {
-  var css = obj.css
-  var media = obj.media
-  var sourceMap = obj.sourceMap
-
-  if (media) {
-    styleElement.setAttribute('media', media)
-  }
-
-  if (sourceMap) {
-    // https://developer.chrome.com/devtools/docs/javascript-debugging
-    // this makes source maps inside style tags work properly in Chrome
-    css += '\n/*# sourceURL=' + sourceMap.sources[0] + ' */'
-    // http://stackoverflow.com/a/26603875
-    css += '\n/*# sourceMappingURL=data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + ' */'
-  }
-
-  if (styleElement.styleSheet) {
-    styleElement.styleSheet.cssText = css
-  } else {
-    while (styleElement.firstChild) {
-      styleElement.removeChild(styleElement.firstChild)
-    }
-    styleElement.appendChild(document.createTextNode(css))
-  }
-}
-
-
-/***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(18)
+__webpack_require__(24)
 
-var Component = __webpack_require__(2)(
+var Component = __webpack_require__(4)(
   /* script */
-  __webpack_require__(6),
+  __webpack_require__(7),
   /* template */
-  __webpack_require__(15),
+  __webpack_require__(20),
   /* scopeId */
   "data-v-d877a75c",
   /* cssModules */
@@ -10034,13 +10132,13 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_vue__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__App_vue__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_vue__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__App_vue__ = __webpack_require__(5);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__App_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__App_vue__);
 
 
@@ -10053,15 +10151,63 @@ new __WEBPACK_IMPORTED_MODULE_0_vue__["default"]({
 });
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__src_FAB_vue__ = __webpack_require__(13);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__src_FAB_vue__ = __webpack_require__(18);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__src_FAB_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__src_FAB_vue__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue_color__ = __webpack_require__(12);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue_color__ = __webpack_require__(17);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue_color___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_vue_color__);
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -10220,9 +10366,12 @@ var defaultProps = {
             positions: ['bottom-right', 'bottom-left', 'top-right', 'top-left'],
             position: 'bottom-right',
             colors: defaultProps,
+            mainIcon: 'add',
+            mainTooltip: 'Hello',
             firstIcon: 'cached',
-            secondIcon: 'add_alert'
-
+            firstTooltip: 'cached',
+            secondIcon: 'add_alert',
+            secondTooltip: 'add_alert'
         };
     },
 
@@ -10244,14 +10393,16 @@ var defaultProps = {
 });
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_vue_clickaway__ = __webpack_require__(11);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_vue_clickaway__ = __webpack_require__(16);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_vue_clickaway___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_vue_clickaway__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue_ripple_directive__ = __webpack_require__(16);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_vue_ripple_directive__ = __webpack_require__(21);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_v_tooltip__ = __webpack_require__(15);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_v_tooltip___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_v_tooltip__);
 //
 //
 //
@@ -10285,17 +10436,57 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
 
 
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     mixins: [__WEBPACK_IMPORTED_MODULE_0_vue_clickaway__["mixin"]],
-    directives: { Ripple: __WEBPACK_IMPORTED_MODULE_1_vue_ripple_directive__["a" /* default */] },
+    directives: { Ripple: __WEBPACK_IMPORTED_MODULE_1_vue_ripple_directive__["a" /* default */], VTooltip: __WEBPACK_IMPORTED_MODULE_2_v_tooltip__["VTooltip"] },
     data: function data() {
         return {
             toggle: false,
-            pos: {}
+            pos: {},
+            tooltipPosition: 'left'
         };
     },
 
@@ -10315,11 +10506,16 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         rippleColor: {
             default: 'light'
         },
+        mainIcon: {
+            default: 'add'
+        },
+        mainTooltip: {
+            default: null
+        },
         actions: {}
     },
     computed: {
         listPos: function listPos() {
-
             if (this.position === 'top-right' || this.position === 'top-left') {
                 return {
                     top: '-20px',
@@ -10342,13 +10538,13 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         animation: function animation() {
             if (this.position === 'top-right' || this.position === 'top-left') {
                 return {
-                    enter: 'animated fadeInDown',
-                    leave: 'animated fadeOutUp'
+                    enter: 'animated quick fadeInDown',
+                    leave: 'animated quick fadeOutUp'
                 };
             } else if (this.position === 'bottom-right' || this.position === 'bottom-left') {
                 return {
-                    enter: 'animated fadeInUp',
-                    leave: 'animated fadeOutDown'
+                    enter: 'animated quick fadeInUp',
+                    leave: 'animated quick fadeOutDown'
                 };
             } else {
                 return {
@@ -10359,6 +10555,13 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         }
     },
     methods: {
+        tooltipPos: function tooltipPos() {
+            if (this.position === 'top-right' || this.position === 'bototm-right') {
+                this.mainTooltip.placement = 'left';
+            } else {
+                this.mainTooltip.placement = 'right';
+            }
+        },
         toParent: function toParent(name) {
             this.$emit(name);
             this.toggle = false;
@@ -10409,6 +10612,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
             this.$nextTick(function () {
                 _this.moveTransition();
+                _this.tooltipPos();
             });
         }
     },
@@ -10421,24 +10625,38 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 });
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(1)();
+exports = module.exports = __webpack_require__(0)();
 // imports
 
 
 // module
-exports.push([module.i, ".fab-wrapper[data-v-1073f3cf]{position:fixed;z-index:999}.fab[data-v-1073f3cf]{border-radius:100px;width:65px;position:relative;overflow:hidden;height:65px;display:flex;align-items:center;box-shadow:0 10px 20px rgba(0,0,0,.19),0 6px 6px rgba(0,0,0,.23);z-index:2}.fab .material-icons[data-v-1073f3cf]{color:#fff;transition:all .4s;margin:0 auto}.fab .material-icons.rotate[data-v-1073f3cf]{-webkit-transform:rotate(315deg);transform:rotate(315deg)}.fab-list[data-v-1073f3cf]{position:relative;z-index:1;margin:2vh .5vw}.fab-list li[data-v-1073f3cf]{width:50px;height:50px;margin-top:2vh;display:flex;align-items:center;border-radius:100px;box-shadow:0 10px 20px rgba(0,0,0,.19),0 6px 6px rgba(0,0,0,.23)}.fab-list li .material-icons[data-v-1073f3cf]{color:#fff;margin:0 auto}.pointer[data-v-1073f3cf]{cursor:pointer}ul[data-v-1073f3cf]{list-style-type:none;padding:0!important}.fab-wrapper .actions-container[data-v-1073f3cf]{overflow:hidden;z-index:0;position:relative}.material-icons.md-18[data-v-1073f3cf]{font-size:18px}.material-icons.md-24[data-v-1073f3cf]{font-size:24px}.material-icons.md-36[data-v-1073f3cf]{font-size:36px}.material-icons.md-48[data-v-1073f3cf]{font-size:48px}.material-icons.md-dark[data-v-1073f3cf]{color:rgba(0,0,0,.54)}.material-icons.md-dark.md-inactive[data-v-1073f3cf]{color:rgba(0,0,0,.26)}.material-icons.md-light[data-v-1073f3cf]{color:#fff}.material-icons.md-light.md-inactive[data-v-1073f3cf]{color:hsla(0,0%,100%,.3)}@media screen and (max-width:768px){.fab-list[data-v-1073f3cf]{margin:2vh 1.8vw}.fab-list li[data-v-1073f3cf]{width:40px;height:40px}.fab-list li i[data-v-1073f3cf]{font-size:24px!important}.fab[data-v-1073f3cf]{width:55px;height:55px}.fab i[data-v-1073f3cf]{font-size:34px!important}}", ""]);
+exports.push([module.i, ".tooltip{display:block!important;padding:.5rem 1rem;z-index:10000}.tooltip .tooltip-inner{background:#333;font-size:.85rem;color:#fff;padding:.2rem 1rem}.tooltip .tooltip-arrow{display:none}.tooltip[aria-hidden=true]{visibility:hidden;opacity:0;transition:opacity .15s,visibility .15s}.tooltip[aria-hidden=false]{visibility:visible;opacity:1;transition:opacity .15s}", ""]);
 
 // exports
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(1)();
+exports = module.exports = __webpack_require__(0)();
+// imports
+
+
+// module
+exports.push([module.i, ".animated.quick[data-v-1073f3cf]{-webkit-animation-duration:.7s!important;animation-duration:.7s!important}.fab-wrapper[data-v-1073f3cf]{position:fixed;z-index:999}.fab[data-v-1073f3cf]{border-radius:100px;width:65px;position:relative;overflow:hidden;height:65px;display:flex;align-items:center;box-shadow:0 10px 10px rgba(0,0,0,.2),0 4px 4px rgba(0,0,0,.15);z-index:2}.fab .material-icons[data-v-1073f3cf]{color:#fff;transition:all .4s;margin:0 auto}.fab .material-icons.main[data-v-1073f3cf]{opacity:1;position:absolute;left:.9rem}.fab .material-icons.close[data-v-1073f3cf]{opacity:0;position:absolute;left:.9rem}.fab .material-icons.main.rotate[data-v-1073f3cf]{opacity:0}.fab .material-icons.close.rotate[data-v-1073f3cf],.fab .material-icons.main.rotate[data-v-1073f3cf]{-webkit-transform:rotate(315deg);transform:rotate(315deg);transition:opacity .3s ease-in,transform .4s}.fab .material-icons.close.rotate[data-v-1073f3cf]{opacity:1}.fab-list[data-v-1073f3cf]{position:relative;z-index:1;margin:2vh .5vw}.fab-list li[data-v-1073f3cf]{width:50px;height:50px;margin-top:2vh;display:flex;align-items:center;border-radius:100px;box-shadow:0 10px 10px rgba(0,0,0,.2),0 4px 4px rgba(0,0,0,.15)}.fab-list li .material-icons[data-v-1073f3cf]{color:#fff;margin:0 auto}.pointer[data-v-1073f3cf]{cursor:pointer}ul[data-v-1073f3cf]{list-style-type:none;padding:0!important}.fab-wrapper .actions-container[data-v-1073f3cf]{overflow:hidden;z-index:0;position:relative}.material-icons.md-18[data-v-1073f3cf]{font-size:18px}.material-icons.md-24[data-v-1073f3cf]{font-size:24px}.material-icons.md-36[data-v-1073f3cf]{font-size:36px}.material-icons.md-48[data-v-1073f3cf]{font-size:48px}.material-icons.md-dark[data-v-1073f3cf]{color:rgba(0,0,0,.54)}.material-icons.md-dark.md-inactive[data-v-1073f3cf]{color:rgba(0,0,0,.26)}.material-icons.md-light[data-v-1073f3cf]{color:#fff}.material-icons.md-light.md-inactive[data-v-1073f3cf]{color:hsla(0,0%,100%,.3)}@media screen and (max-width:768px){.fab-list[data-v-1073f3cf]{margin:2vh 1.8vw}.fab-list li[data-v-1073f3cf]{width:40px;height:40px}.fab-list li i[data-v-1073f3cf]{font-size:24px!important}.fab[data-v-1073f3cf]{width:55px;height:55px}.fab i[data-v-1073f3cf]{font-size:34px!important}}", ""]);
+
+// exports
+
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(0)();
 // imports
 
 
@@ -10449,19 +10667,3222 @@ exports.push([module.i, "#app[data-v-d877a75c]{-webkit-font-smoothing:antialiase
 
 
 /***/ }),
-/* 10 */
+/* 12 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(global) {var nativeHints = ['native code', '[object MutationObserverConstructor]'];
+
+/**
+ * Determine if a function is implemented natively (as opposed to a polyfill).
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Function | undefined} fn the function to check
+ * @returns {Boolean}
+ */
+var isNative = (function (fn) {
+  return nativeHints.some(function (hint) {
+    return (fn || '').toString().indexOf(hint) > -1;
+  });
+});
+
+var isBrowser = typeof window !== 'undefined';
+var longerTimeoutBrowsers = ['Edge', 'Trident', 'Firefox'];
+var timeoutDuration = 0;
+for (var i = 0; i < longerTimeoutBrowsers.length; i += 1) {
+  if (isBrowser && navigator.userAgent.indexOf(longerTimeoutBrowsers[i]) >= 0) {
+    timeoutDuration = 1;
+    break;
+  }
+}
+
+function microtaskDebounce(fn) {
+  var scheduled = false;
+  var i = 0;
+  var elem = document.createElement('span');
+
+  // MutationObserver provides a mechanism for scheduling microtasks, which
+  // are scheduled *before* the next task. This gives us a way to debounce
+  // a function but ensure it's called *before* the next paint.
+  var observer = new MutationObserver(function () {
+    fn();
+    scheduled = false;
+  });
+
+  observer.observe(elem, { attributes: true });
+
+  return function () {
+    if (!scheduled) {
+      scheduled = true;
+      elem.setAttribute('x-index', i);
+      i = i + 1; // don't use compund (+=) because it doesn't get optimized in V8
+    }
+  };
+}
+
+function taskDebounce(fn) {
+  var scheduled = false;
+  return function () {
+    if (!scheduled) {
+      scheduled = true;
+      setTimeout(function () {
+        scheduled = false;
+        fn();
+      }, timeoutDuration);
+    }
+  };
+}
+
+// It's common for MutationObserver polyfills to be seen in the wild, however
+// these rely on Mutation Events which only occur when an element is connected
+// to the DOM. The algorithm used in this module does not use a connected element,
+// and so we must ensure that a *native* MutationObserver is available.
+var supportsNativeMutationObserver = isBrowser && isNative(window.MutationObserver);
+
+/**
+* Create a debounced version of a method, that's asynchronously deferred
+* but called in the minimum time possible.
+*
+* @method
+* @memberof Popper.Utils
+* @argument {Function} fn
+* @returns {Function}
+*/
+var debounce = supportsNativeMutationObserver ? microtaskDebounce : taskDebounce;
+
+/**
+ * Tells if a given input is a number
+ * @method
+ * @memberof Popper.Utils
+ * @param {*} input to check
+ * @return {Boolean}
+ */
+function isNumeric(n) {
+  return n !== '' && !isNaN(parseFloat(n)) && isFinite(n);
+}
+
+/**
+ * Set the style to the given popper
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} element - Element to apply the style to
+ * @argument {Object} styles
+ * Object with a list of properties and values which will be applied to the element
+ */
+function setStyles(element, styles) {
+  Object.keys(styles).forEach(function (prop) {
+    var unit = '';
+    // add unit if the value is numeric and is one of the following
+    if (['width', 'height', 'top', 'right', 'bottom', 'left'].indexOf(prop) !== -1 && isNumeric(styles[prop])) {
+      unit = 'px';
+    }
+    element.style[prop] = styles[prop] + unit;
+  });
+}
+
+/**
+ * Check if the given variable is a function
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Any} functionToCheck - variable to check
+ * @returns {Boolean} answer to: is a function?
+ */
+function isFunction(functionToCheck) {
+  var getType = {};
+  return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+}
+
+/**
+ * Get CSS computed property of the given element
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Eement} element
+ * @argument {String} property
+ */
+function getStyleComputedProperty(element, property) {
+  if (element.nodeType !== 1) {
+    return [];
+  }
+  // NOTE: 1 DOM access here
+  var css = window.getComputedStyle(element, null);
+  return property ? css[property] : css;
+}
+
+/**
+ * Returns the parentNode or the host of the element
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} element
+ * @returns {Element} parent
+ */
+function getParentNode(element) {
+  if (element.nodeName === 'HTML') {
+    return element;
+  }
+  return element.parentNode || element.host;
+}
+
+/**
+ * Returns the scrolling parent of the given element
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} element
+ * @returns {Element} scroll parent
+ */
+function getScrollParent(element) {
+  // Return body, `getScroll` will take care to get the correct `scrollTop` from it
+  if (!element || ['HTML', 'BODY', '#document'].indexOf(element.nodeName) !== -1) {
+    return window.document.body;
+  }
+
+  // Firefox want us to check `-x` and `-y` variations as well
+
+  var _getStyleComputedProp = getStyleComputedProperty(element),
+      overflow = _getStyleComputedProp.overflow,
+      overflowX = _getStyleComputedProp.overflowX,
+      overflowY = _getStyleComputedProp.overflowY;
+
+  if (/(auto|scroll)/.test(overflow + overflowY + overflowX)) {
+    return element;
+  }
+
+  return getScrollParent(getParentNode(element));
+}
+
+function isOffsetContainer(element) {
+  var nodeName = element.nodeName;
+
+  if (nodeName === 'BODY') {
+    return false;
+  }
+  return nodeName === 'HTML' || element.firstElementChild.offsetParent === element;
+}
+
+/**
+ * Finds the root node (document, shadowDOM root) of the given element
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} node
+ * @returns {Element} root node
+ */
+function getRoot(node) {
+  if (node.parentNode !== null) {
+    return getRoot(node.parentNode);
+  }
+
+  return node;
+}
+
+/**
+ * Returns the offset parent of the given element
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} element
+ * @returns {Element} offset parent
+ */
+function getOffsetParent(element) {
+  // NOTE: 1 DOM access here
+  var offsetParent = element && element.offsetParent;
+  var nodeName = offsetParent && offsetParent.nodeName;
+
+  if (!nodeName || nodeName === 'BODY' || nodeName === 'HTML') {
+    return window.document.documentElement;
+  }
+
+  return offsetParent;
+}
+
+/**
+ * Finds the offset parent common to the two provided nodes
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} element1
+ * @argument {Element} element2
+ * @returns {Element} common offset parent
+ */
+function findCommonOffsetParent(element1, element2) {
+  // This check is needed to avoid errors in case one of the elements isn't defined for any reason
+  if (!element1 || !element1.nodeType || !element2 || !element2.nodeType) {
+    return window.document.documentElement;
+  }
+
+  // Here we make sure to give as "start" the element that comes first in the DOM
+  var order = element1.compareDocumentPosition(element2) & Node.DOCUMENT_POSITION_FOLLOWING;
+  var start = order ? element1 : element2;
+  var end = order ? element2 : element1;
+
+  // Get common ancestor container
+  var range = document.createRange();
+  range.setStart(start, 0);
+  range.setEnd(end, 0);
+  var commonAncestorContainer = range.commonAncestorContainer;
+
+  // Both nodes are inside #document
+
+  if (element1 !== commonAncestorContainer && element2 !== commonAncestorContainer || start.contains(end)) {
+    if (isOffsetContainer(commonAncestorContainer)) {
+      return commonAncestorContainer;
+    }
+
+    return getOffsetParent(commonAncestorContainer);
+  }
+
+  // one of the nodes is inside shadowDOM, find which one
+  var element1root = getRoot(element1);
+  if (element1root.host) {
+    return findCommonOffsetParent(element1root.host, element2);
+  } else {
+    return findCommonOffsetParent(element1, getRoot(element2).host);
+  }
+}
+
+/**
+ * Gets the scroll value of the given element in the given side (top and left)
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} element
+ * @argument {String} side `top` or `left`
+ * @returns {number} amount of scrolled pixels
+ */
+function getScroll(element) {
+  var side = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'top';
+
+  var upperSide = side === 'top' ? 'scrollTop' : 'scrollLeft';
+  var nodeName = element.nodeName;
+
+  if (nodeName === 'BODY' || nodeName === 'HTML') {
+    var html = window.document.documentElement;
+    var scrollingElement = window.document.scrollingElement || html;
+    return scrollingElement[upperSide];
+  }
+
+  return element[upperSide];
+}
+
+/*
+ * Sum or subtract the element scroll values (left and top) from a given rect object
+ * @method
+ * @memberof Popper.Utils
+ * @param {Object} rect - Rect object you want to change
+ * @param {HTMLElement} element - The element from the function reads the scroll values
+ * @param {Boolean} subtract - set to true if you want to subtract the scroll values
+ * @return {Object} rect - The modifier rect object
+ */
+function includeScroll(rect, element) {
+  var subtract = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+  var scrollTop = getScroll(element, 'top');
+  var scrollLeft = getScroll(element, 'left');
+  var modifier = subtract ? -1 : 1;
+  rect.top += scrollTop * modifier;
+  rect.bottom += scrollTop * modifier;
+  rect.left += scrollLeft * modifier;
+  rect.right += scrollLeft * modifier;
+  return rect;
+}
+
+/*
+ * Helper to detect borders of a given element
+ * @method
+ * @memberof Popper.Utils
+ * @param {CSSStyleDeclaration} styles
+ * Result of `getStyleComputedProperty` on the given element
+ * @param {String} axis - `x` or `y`
+ * @return {number} borders - The borders size of the given axis
+ */
+
+function getBordersSize(styles, axis) {
+  var sideA = axis === 'x' ? 'Left' : 'Top';
+  var sideB = sideA === 'Left' ? 'Right' : 'Bottom';
+
+  return +styles['border' + sideA + 'Width'].split('px')[0] + +styles['border' + sideB + 'Width'].split('px')[0];
+}
+
+/**
+ * Tells if you are running Internet Explorer 10
+ * @method
+ * @memberof Popper.Utils
+ * @returns {Boolean} isIE10
+ */
+var isIE10 = undefined;
+
+var isIE10$1 = function () {
+  if (isIE10 === undefined) {
+    isIE10 = navigator.appVersion.indexOf('MSIE 10') !== -1;
+  }
+  return isIE10;
+};
+
+function getSize(axis, body, html, computedStyle) {
+  return Math.max(body['offset' + axis], html['client' + axis], html['offset' + axis], isIE10$1() ? html['offset' + axis] + computedStyle['margin' + (axis === 'Height' ? 'Top' : 'Left')] + computedStyle['margin' + (axis === 'Height' ? 'Bottom' : 'Right')] : 0);
+}
+
+function getWindowSizes() {
+  var body = window.document.body;
+  var html = window.document.documentElement;
+  var computedStyle = isIE10$1() && window.getComputedStyle(html);
+
+  return {
+    height: getSize('Height', body, html, computedStyle),
+    width: getSize('Width', body, html, computedStyle)
+  };
+}
+
+var classCallCheck = function (instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+};
+
+var createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];
+      descriptor.enumerable = descriptor.enumerable || false;
+      descriptor.configurable = true;
+      if ("value" in descriptor) descriptor.writable = true;
+      Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }
+
+  return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) defineProperties(Constructor, staticProps);
+    return Constructor;
+  };
+}();
+
+
+
+
+
+var defineProperty = function (obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+};
+
+var _extends = Object.assign || function (target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i];
+
+    for (var key in source) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        target[key] = source[key];
+      }
+    }
+  }
+
+  return target;
+};
+
+/**
+ * Given element offsets, generate an output similar to getBoundingClientRect
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Object} offsets
+ * @returns {Object} ClientRect like output
+ */
+function getClientRect(offsets) {
+  return _extends({}, offsets, {
+    right: offsets.left + offsets.width,
+    bottom: offsets.top + offsets.height
+  });
+}
+
+/**
+ * Get bounding client rect of given element
+ * @method
+ * @memberof Popper.Utils
+ * @param {HTMLElement} element
+ * @return {Object} client rect
+ */
+function getBoundingClientRect(element) {
+  var rect = {};
+
+  // IE10 10 FIX: Please, don't ask, the element isn't
+  // considered in DOM in some circumstances...
+  // This isn't reproducible in IE10 compatibility mode of IE11
+  if (isIE10$1()) {
+    try {
+      rect = element.getBoundingClientRect();
+      var scrollTop = getScroll(element, 'top');
+      var scrollLeft = getScroll(element, 'left');
+      rect.top += scrollTop;
+      rect.left += scrollLeft;
+      rect.bottom += scrollTop;
+      rect.right += scrollLeft;
+    } catch (err) {}
+  } else {
+    rect = element.getBoundingClientRect();
+  }
+
+  var result = {
+    left: rect.left,
+    top: rect.top,
+    width: rect.right - rect.left,
+    height: rect.bottom - rect.top
+  };
+
+  // subtract scrollbar size from sizes
+  var sizes = element.nodeName === 'HTML' ? getWindowSizes() : {};
+  var width = sizes.width || element.clientWidth || result.right - result.left;
+  var height = sizes.height || element.clientHeight || result.bottom - result.top;
+
+  var horizScrollbar = element.offsetWidth - width;
+  var vertScrollbar = element.offsetHeight - height;
+
+  // if an hypothetical scrollbar is detected, we must be sure it's not a `border`
+  // we make this check conditional for performance reasons
+  if (horizScrollbar || vertScrollbar) {
+    var styles = getStyleComputedProperty(element);
+    horizScrollbar -= getBordersSize(styles, 'x');
+    vertScrollbar -= getBordersSize(styles, 'y');
+
+    result.width -= horizScrollbar;
+    result.height -= vertScrollbar;
+  }
+
+  return getClientRect(result);
+}
+
+function getOffsetRectRelativeToArbitraryNode(children, parent) {
+  var isIE10 = isIE10$1();
+  var isHTML = parent.nodeName === 'HTML';
+  var childrenRect = getBoundingClientRect(children);
+  var parentRect = getBoundingClientRect(parent);
+  var scrollParent = getScrollParent(children);
+  var offsets = getClientRect({
+    top: childrenRect.top - parentRect.top,
+    left: childrenRect.left - parentRect.left,
+    width: childrenRect.width,
+    height: childrenRect.height
+  });
+
+  // Subtract margins of documentElement in case it's being used as parent
+  // we do this only on HTML because it's the only element that behaves
+  // differently when margins are applied to it. The margins are included in
+  // the box of the documentElement, in the other cases not.
+  if (isHTML || parent.nodeName === 'BODY') {
+    var styles = getStyleComputedProperty(parent);
+    var borderTopWidth = isIE10 && isHTML ? 0 : +styles.borderTopWidth.split('px')[0];
+    var borderLeftWidth = isIE10 && isHTML ? 0 : +styles.borderLeftWidth.split('px')[0];
+    var marginTop = isIE10 && isHTML ? 0 : +styles.marginTop.split('px')[0];
+    var marginLeft = isIE10 && isHTML ? 0 : +styles.marginLeft.split('px')[0];
+
+    offsets.top -= borderTopWidth - marginTop;
+    offsets.bottom -= borderTopWidth - marginTop;
+    offsets.left -= borderLeftWidth - marginLeft;
+    offsets.right -= borderLeftWidth - marginLeft;
+
+    // Attach marginTop and marginLeft because in some circumstances we may need them
+    offsets.marginTop = marginTop;
+    offsets.marginLeft = marginLeft;
+  }
+
+  if (parent.contains(scrollParent) && (isIE10 || scrollParent.nodeName !== 'BODY')) {
+    offsets = includeScroll(offsets, parent);
+  }
+
+  return offsets;
+}
+
+function getViewportOffsetRectRelativeToArtbitraryNode(element) {
+  var html = window.document.documentElement;
+  var relativeOffset = getOffsetRectRelativeToArbitraryNode(element, html);
+  var width = Math.max(html.clientWidth, window.innerWidth || 0);
+  var height = Math.max(html.clientHeight, window.innerHeight || 0);
+
+  var scrollTop = getScroll(html);
+  var scrollLeft = getScroll(html, 'left');
+
+  var offset = {
+    top: scrollTop - relativeOffset.top + relativeOffset.marginTop,
+    left: scrollLeft - relativeOffset.left + relativeOffset.marginLeft,
+    width: width,
+    height: height
+  };
+
+  return getClientRect(offset);
+}
+
+/**
+ * Check if the given element is fixed or is inside a fixed parent
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} element
+ * @argument {Element} customContainer
+ * @returns {Boolean} answer to "isFixed?"
+ */
+function isFixed(element) {
+  var nodeName = element.nodeName;
+  if (nodeName === 'BODY' || nodeName === 'HTML') {
+    return false;
+  }
+  if (getStyleComputedProperty(element, 'position') === 'fixed') {
+    return true;
+  }
+  return isFixed(getParentNode(element));
+}
+
+/**
+ * Computed the boundaries limits and return them
+ * @method
+ * @memberof Popper.Utils
+ * @param {HTMLElement} popper
+ * @param {HTMLElement} reference
+ * @param {number} padding
+ * @param {HTMLElement} boundariesElement - Element used to define the boundaries
+ * @returns {Object} Coordinates of the boundaries
+ */
+function getBoundaries(popper, reference, padding, boundariesElement) {
+  // NOTE: 1 DOM access here
+  var boundaries = { top: 0, left: 0 };
+  var offsetParent = findCommonOffsetParent(popper, reference);
+
+  // Handle viewport case
+  if (boundariesElement === 'viewport') {
+    boundaries = getViewportOffsetRectRelativeToArtbitraryNode(offsetParent);
+  } else {
+    // Handle other cases based on DOM element used as boundaries
+    var boundariesNode = void 0;
+    if (boundariesElement === 'scrollParent') {
+      boundariesNode = getScrollParent(getParentNode(popper));
+      if (boundariesNode.nodeName === 'BODY') {
+        boundariesNode = window.document.documentElement;
+      }
+    } else if (boundariesElement === 'window') {
+      boundariesNode = window.document.documentElement;
+    } else {
+      boundariesNode = boundariesElement;
+    }
+
+    var offsets = getOffsetRectRelativeToArbitraryNode(boundariesNode, offsetParent);
+
+    // In case of HTML, we need a different computation
+    if (boundariesNode.nodeName === 'HTML' && !isFixed(offsetParent)) {
+      var _getWindowSizes = getWindowSizes(),
+          height = _getWindowSizes.height,
+          width = _getWindowSizes.width;
+
+      boundaries.top += offsets.top - offsets.marginTop;
+      boundaries.bottom = height + offsets.top;
+      boundaries.left += offsets.left - offsets.marginLeft;
+      boundaries.right = width + offsets.left;
+    } else {
+      // for all the other DOM elements, this one is good
+      boundaries = offsets;
+    }
+  }
+
+  // Add paddings
+  boundaries.left += padding;
+  boundaries.top += padding;
+  boundaries.right -= padding;
+  boundaries.bottom -= padding;
+
+  return boundaries;
+}
+
+/**
+ * Utility used to transform the `auto` placement to the placement with more
+ * available space.
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Object} data - The data object generated by update method
+ * @argument {Object} options - Modifiers configuration and options
+ * @returns {Object} The data object, properly modified
+ */
+function computeAutoPlacement(placement, refRect, popper, reference, boundariesElement) {
+  if (placement.indexOf('auto') === -1) {
+    return placement;
+  }
+
+  var boundaries = getBoundaries(popper, reference, 0, boundariesElement);
+
+  var sides = {
+    top: refRect.top - boundaries.top,
+    right: boundaries.right - refRect.right,
+    bottom: boundaries.bottom - refRect.bottom,
+    left: refRect.left - boundaries.left
+  };
+
+  var computedPlacement = Object.keys(sides).sort(function (a, b) {
+    return sides[b] - sides[a];
+  })[0];
+  var variation = placement.split('-')[1];
+
+  return computedPlacement + (variation ? '-' + variation : '');
+}
+
+/**
+ * Get offsets to the reference element
+ * @method
+ * @memberof Popper.Utils
+ * @param {Object} state
+ * @param {Element} popper - the popper element
+ * @param {Element} reference - the reference element (the popper will be relative to this)
+ * @returns {Object} An object containing the offsets which will be applied to the popper
+ */
+function getReferenceOffsets(state, popper, reference) {
+  var commonOffsetParent = findCommonOffsetParent(popper, reference);
+  return getOffsetRectRelativeToArbitraryNode(reference, commonOffsetParent);
+}
+
+/**
+ * Get the outer sizes of the given element (offset size + margins)
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} element
+ * @returns {Object} object containing width and height properties
+ */
+function getOuterSizes(element) {
+  var styles = window.getComputedStyle(element);
+  var x = parseFloat(styles.marginTop) + parseFloat(styles.marginBottom);
+  var y = parseFloat(styles.marginLeft) + parseFloat(styles.marginRight);
+  var result = {
+    width: element.offsetWidth + y,
+    height: element.offsetHeight + x
+  };
+  return result;
+}
+
+/**
+ * Get the opposite placement of the given one
+ * @method
+ * @memberof Popper.Utils
+ * @argument {String} placement
+ * @returns {String} flipped placement
+ */
+function getOppositePlacement(placement) {
+  var hash = { left: 'right', right: 'left', bottom: 'top', top: 'bottom' };
+  return placement.replace(/left|right|bottom|top/g, function (matched) {
+    return hash[matched];
+  });
+}
+
+/**
+ * Get offsets to the popper
+ * @method
+ * @memberof Popper.Utils
+ * @param {Object} position - CSS position the Popper will get applied
+ * @param {HTMLElement} popper - the popper element
+ * @param {Object} referenceOffsets - the reference offsets (the popper will be relative to this)
+ * @param {String} placement - one of the valid placement options
+ * @returns {Object} popperOffsets - An object containing the offsets which will be applied to the popper
+ */
+function getPopperOffsets(popper, referenceOffsets, placement) {
+  placement = placement.split('-')[0];
+
+  // Get popper node sizes
+  var popperRect = getOuterSizes(popper);
+
+  // Add position, width and height to our offsets object
+  var popperOffsets = {
+    width: popperRect.width,
+    height: popperRect.height
+  };
+
+  // depending by the popper placement we have to compute its offsets slightly differently
+  var isHoriz = ['right', 'left'].indexOf(placement) !== -1;
+  var mainSide = isHoriz ? 'top' : 'left';
+  var secondarySide = isHoriz ? 'left' : 'top';
+  var measurement = isHoriz ? 'height' : 'width';
+  var secondaryMeasurement = !isHoriz ? 'height' : 'width';
+
+  popperOffsets[mainSide] = referenceOffsets[mainSide] + referenceOffsets[measurement] / 2 - popperRect[measurement] / 2;
+  if (placement === secondarySide) {
+    popperOffsets[secondarySide] = referenceOffsets[secondarySide] - popperRect[secondaryMeasurement];
+  } else {
+    popperOffsets[secondarySide] = referenceOffsets[getOppositePlacement(secondarySide)];
+  }
+
+  return popperOffsets;
+}
+
+/**
+ * Mimics the `find` method of Array
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Array} arr
+ * @argument prop
+ * @argument value
+ * @returns index or -1
+ */
+function find(arr, check) {
+  // use native find if supported
+  if (Array.prototype.find) {
+    return arr.find(check);
+  }
+
+  // use `filter` to obtain the same behavior of `find`
+  return arr.filter(check)[0];
+}
+
+/**
+ * Return the index of the matching object
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Array} arr
+ * @argument prop
+ * @argument value
+ * @returns index or -1
+ */
+function findIndex(arr, prop, value) {
+  // use native findIndex if supported
+  if (Array.prototype.findIndex) {
+    return arr.findIndex(function (cur) {
+      return cur[prop] === value;
+    });
+  }
+
+  // use `find` + `indexOf` if `findIndex` isn't supported
+  var match = find(arr, function (obj) {
+    return obj[prop] === value;
+  });
+  return arr.indexOf(match);
+}
+
+/**
+ * Loop trough the list of modifiers and run them in order,
+ * each of them will then edit the data object.
+ * @method
+ * @memberof Popper.Utils
+ * @param {dataObject} data
+ * @param {Array} modifiers
+ * @param {String} ends - Optional modifier name used as stopper
+ * @returns {dataObject}
+ */
+function runModifiers(modifiers, data, ends) {
+  var modifiersToRun = ends === undefined ? modifiers : modifiers.slice(0, findIndex(modifiers, 'name', ends));
+
+  modifiersToRun.forEach(function (modifier) {
+    if (modifier.function) {
+      console.warn('`modifier.function` is deprecated, use `modifier.fn`!');
+    }
+    var fn = modifier.function || modifier.fn;
+    if (modifier.enabled && isFunction(fn)) {
+      data = fn(data, modifier);
+    }
+  });
+
+  return data;
+}
+
+/**
+ * Updates the position of the popper, computing the new offsets and applying
+ * the new style.<br />
+ * Prefer `scheduleUpdate` over `update` because of performance reasons.
+ * @method
+ * @memberof Popper
+ */
+function update() {
+  // if popper is destroyed, don't perform any further update
+  if (this.state.isDestroyed) {
+    return;
+  }
+
+  var data = {
+    instance: this,
+    styles: {},
+    attributes: {},
+    flipped: false,
+    offsets: {}
+  };
+
+  // compute reference element offsets
+  data.offsets.reference = getReferenceOffsets(this.state, this.popper, this.reference);
+
+  // compute auto placement, store placement inside the data object,
+  // modifiers will be able to edit `placement` if needed
+  // and refer to originalPlacement to know the original value
+  data.placement = computeAutoPlacement(this.options.placement, data.offsets.reference, this.popper, this.reference, this.options.modifiers.flip.boundariesElement);
+
+  // store the computed placement inside `originalPlacement`
+  data.originalPlacement = data.placement;
+
+  // compute the popper offsets
+  data.offsets.popper = getPopperOffsets(this.popper, data.offsets.reference, data.placement);
+  data.offsets.popper.position = 'absolute';
+
+  // run the modifiers
+  data = runModifiers(this.modifiers, data);
+
+  // the first `update` will call `onCreate` callback
+  // the other ones will call `onUpdate` callback
+  if (!this.state.isCreated) {
+    this.state.isCreated = true;
+    this.options.onCreate(data);
+  } else {
+    this.options.onUpdate(data);
+  }
+}
+
+/**
+ * Helper used to know if the given modifier is enabled.
+ * @method
+ * @memberof Popper.Utils
+ * @returns {Boolean}
+ */
+function isModifierEnabled(modifiers, modifierName) {
+  return modifiers.some(function (_ref) {
+    var name = _ref.name,
+        enabled = _ref.enabled;
+    return enabled && name === modifierName;
+  });
+}
+
+/**
+ * Get the prefixed supported property name
+ * @method
+ * @memberof Popper.Utils
+ * @argument {String} property (camelCase)
+ * @returns {String} prefixed property (camelCase)
+ */
+function getSupportedPropertyName(property) {
+  var prefixes = [false, 'ms', 'webkit', 'moz', 'o'];
+  var upperProp = property.charAt(0).toUpperCase() + property.slice(1);
+
+  for (var i = 0; i < prefixes.length - 1; i++) {
+    var prefix = prefixes[i];
+    var toCheck = prefix ? '' + prefix + upperProp : property;
+    if (typeof window.document.body.style[toCheck] !== 'undefined') {
+      return toCheck;
+    }
+  }
+  return null;
+}
+
+/**
+ * Destroy the popper
+ * @method
+ * @memberof Popper
+ */
+function destroy() {
+  this.state.isDestroyed = true;
+
+  // touch DOM only if `applyStyle` modifier is enabled
+  if (isModifierEnabled(this.modifiers, 'applyStyle')) {
+    this.popper.removeAttribute('x-placement');
+    this.popper.style.left = '';
+    this.popper.style.position = '';
+    this.popper.style.top = '';
+    this.popper.style[getSupportedPropertyName('transform')] = '';
+  }
+
+  this.disableEventListeners();
+
+  // remove the popper if user explicity asked for the deletion on destroy
+  // do not use `remove` because IE11 doesn't support it
+  if (this.options.removeOnDestroy) {
+    this.popper.parentNode.removeChild(this.popper);
+  }
+  return this;
+}
+
+function attachToScrollParents(scrollParent, event, callback, scrollParents) {
+  var isBody = scrollParent.nodeName === 'BODY';
+  var target = isBody ? window : scrollParent;
+  target.addEventListener(event, callback, { passive: true });
+
+  if (!isBody) {
+    attachToScrollParents(getScrollParent(target.parentNode), event, callback, scrollParents);
+  }
+  scrollParents.push(target);
+}
+
+/**
+ * Setup needed event listeners used to update the popper position
+ * @method
+ * @memberof Popper.Utils
+ * @private
+ */
+function setupEventListeners(reference, options, state, updateBound) {
+  // Resize event listener on window
+  state.updateBound = updateBound;
+  window.addEventListener('resize', state.updateBound, { passive: true });
+
+  // Scroll event listener on scroll parents
+  var scrollElement = getScrollParent(reference);
+  attachToScrollParents(scrollElement, 'scroll', state.updateBound, state.scrollParents);
+  state.scrollElement = scrollElement;
+  state.eventsEnabled = true;
+
+  return state;
+}
+
+/**
+ * It will add resize/scroll events and start recalculating
+ * position of the popper element when they are triggered.
+ * @method
+ * @memberof Popper
+ */
+function enableEventListeners() {
+  if (!this.state.eventsEnabled) {
+    this.state = setupEventListeners(this.reference, this.options, this.state, this.scheduleUpdate);
+  }
+}
+
+/**
+ * Remove event listeners used to update the popper position
+ * @method
+ * @memberof Popper.Utils
+ * @private
+ */
+function removeEventListeners(reference, state) {
+  // Remove resize event listener on window
+  window.removeEventListener('resize', state.updateBound);
+
+  // Remove scroll event listener on scroll parents
+  state.scrollParents.forEach(function (target) {
+    target.removeEventListener('scroll', state.updateBound);
+  });
+
+  // Reset state
+  state.updateBound = null;
+  state.scrollParents = [];
+  state.scrollElement = null;
+  state.eventsEnabled = false;
+  return state;
+}
+
+/**
+ * It will remove resize/scroll events and won't recalculate popper position
+ * when they are triggered. It also won't trigger onUpdate callback anymore,
+ * unless you call `update` method manually.
+ * @method
+ * @memberof Popper
+ */
+function disableEventListeners() {
+  if (this.state.eventsEnabled) {
+    window.cancelAnimationFrame(this.scheduleUpdate);
+    this.state = removeEventListeners(this.reference, this.state);
+  }
+}
+
+/**
+ * Set the attributes to the given popper
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Element} element - Element to apply the attributes to
+ * @argument {Object} styles
+ * Object with a list of properties and values which will be applied to the element
+ */
+function setAttributes(element, attributes) {
+  Object.keys(attributes).forEach(function (prop) {
+    var value = attributes[prop];
+    if (value !== false) {
+      element.setAttribute(prop, attributes[prop]);
+    } else {
+      element.removeAttribute(prop);
+    }
+  });
+}
+
+/**
+ * @function
+ * @memberof Modifiers
+ * @argument {Object} data - The data object generated by `update` method
+ * @argument {Object} data.styles - List of style properties - values to apply to popper element
+ * @argument {Object} data.attributes - List of attribute properties - values to apply to popper element
+ * @argument {Object} options - Modifiers configuration and options
+ * @returns {Object} The same data object
+ */
+function applyStyle(data, options) {
+  // apply the final offsets to the popper
+  // NOTE: 1 DOM access here
+  var styles = {
+    position: data.offsets.popper.position
+  };
+
+  var attributes = {
+    'x-placement': data.placement
+  };
+
+  // round top and left to avoid blurry text
+  var left = Math.round(data.offsets.popper.left);
+  var top = Math.round(data.offsets.popper.top);
+
+  // if gpuAcceleration is set to true and transform is supported,
+  //  we use `translate3d` to apply the position to the popper we
+  // automatically use the supported prefixed version if needed
+  var prefixedProperty = getSupportedPropertyName('transform');
+  if (options.gpuAcceleration && prefixedProperty) {
+    styles[prefixedProperty] = 'translate3d(' + left + 'px, ' + top + 'px, 0)';
+    styles.top = 0;
+    styles.left = 0;
+    styles.willChange = 'transform';
+  } else {
+    // othwerise, we use the standard `left` and `top` properties
+    styles.left = left;
+    styles.top = top;
+    styles.willChange = 'top, left';
+  }
+
+  // any property present in `data.styles` will be applied to the popper,
+  // in this way we can make the 3rd party modifiers add custom styles to it
+  // Be aware, modifiers could override the properties defined in the previous
+  // lines of this modifier!
+  setStyles(data.instance.popper, _extends({}, styles, data.styles));
+
+  // any property present in `data.attributes` will be applied to the popper,
+  // they will be set as HTML attributes of the element
+  setAttributes(data.instance.popper, _extends({}, attributes, data.attributes));
+
+  // if the arrow style has been computed, apply the arrow style
+  if (data.offsets.arrow) {
+    setStyles(data.arrowElement, data.offsets.arrow);
+  }
+
+  return data;
+}
+
+/**
+ * Set the x-placement attribute before everything else because it could be used
+ * to add margins to the popper margins needs to be calculated to get the
+ * correct popper offsets.
+ * @method
+ * @memberof Popper.modifiers
+ * @param {HTMLElement} reference - The reference element used to position the popper
+ * @param {HTMLElement} popper - The HTML element used as popper.
+ * @param {Object} options - Popper.js options
+ */
+function applyStyleOnLoad(reference, popper, options, modifierOptions, state) {
+  // compute reference element offsets
+  var referenceOffsets = getReferenceOffsets(state, popper, reference);
+
+  // compute auto placement, store placement inside the data object,
+  // modifiers will be able to edit `placement` if needed
+  // and refer to originalPlacement to know the original value
+  var placement = computeAutoPlacement(options.placement, referenceOffsets, popper, reference, options.modifiers.flip.boundariesElement);
+
+  popper.setAttribute('x-placement', placement);
+  return options;
+}
+
+/**
+ * Helper used to know if the given modifier depends from another one.<br />
+ * It checks if the needed modifier is listed and enabled.
+ * @method
+ * @memberof Popper.Utils
+ * @param {Array} modifiers - list of modifiers
+ * @param {String} requestingName - name of requesting modifier
+ * @param {String} requestedName - name of requested modifier
+ * @returns {Boolean}
+ */
+function isModifierRequired(modifiers, requestingName, requestedName) {
+  var requesting = find(modifiers, function (_ref) {
+    var name = _ref.name;
+    return name === requestingName;
+  });
+
+  var isRequired = !!requesting && modifiers.some(function (modifier) {
+    return modifier.name === requestedName && modifier.enabled && modifier.order < requesting.order;
+  });
+
+  if (!isRequired) {
+    var _requesting = '`' + requestingName + '`';
+    var requested = '`' + requestedName + '`';
+    console.warn(requested + ' modifier is required by ' + _requesting + ' modifier in order to work, be sure to include it before ' + _requesting + '!');
+  }
+  return isRequired;
+}
+
+/**
+ * @function
+ * @memberof Modifiers
+ * @argument {Object} data - The data object generated by update method
+ * @argument {Object} options - Modifiers configuration and options
+ * @returns {Object} The data object, properly modified
+ */
+function arrow(data, options) {
+  // arrow depends on keepTogether in order to work
+  if (!isModifierRequired(data.instance.modifiers, 'arrow', 'keepTogether')) {
+    return data;
+  }
+
+  var arrowElement = options.element;
+
+  // if arrowElement is a string, suppose it's a CSS selector
+  if (typeof arrowElement === 'string') {
+    arrowElement = data.instance.popper.querySelector(arrowElement);
+
+    // if arrowElement is not found, don't run the modifier
+    if (!arrowElement) {
+      return data;
+    }
+  } else {
+    // if the arrowElement isn't a query selector we must check that the
+    // provided DOM node is child of its popper node
+    if (!data.instance.popper.contains(arrowElement)) {
+      console.warn('WARNING: `arrow.element` must be child of its popper element!');
+      return data;
+    }
+  }
+
+  var placement = data.placement.split('-')[0];
+  var popper = getClientRect(data.offsets.popper);
+  var reference = data.offsets.reference;
+  var isVertical = ['left', 'right'].indexOf(placement) !== -1;
+
+  var len = isVertical ? 'height' : 'width';
+  var side = isVertical ? 'top' : 'left';
+  var altSide = isVertical ? 'left' : 'top';
+  var opSide = isVertical ? 'bottom' : 'right';
+  var arrowElementSize = getOuterSizes(arrowElement)[len];
+
+  //
+  // extends keepTogether behavior making sure the popper and its reference have enough pixels in conjuction
+  //
+
+  // top/left side
+  if (reference[opSide] - arrowElementSize < popper[side]) {
+    data.offsets.popper[side] -= popper[side] - (reference[opSide] - arrowElementSize);
+  }
+  // bottom/right side
+  if (reference[side] + arrowElementSize > popper[opSide]) {
+    data.offsets.popper[side] += reference[side] + arrowElementSize - popper[opSide];
+  }
+
+  // compute center of the popper
+  var center = reference[side] + reference[len] / 2 - arrowElementSize / 2;
+
+  // Compute the sideValue using the updated popper offsets
+  var sideValue = center - getClientRect(data.offsets.popper)[side];
+
+  // prevent arrowElement from being placed not contiguously to its popper
+  sideValue = Math.max(Math.min(popper[len] - arrowElementSize, sideValue), 0);
+
+  data.arrowElement = arrowElement;
+  data.offsets.arrow = {};
+  data.offsets.arrow[side] = sideValue;
+  data.offsets.arrow[altSide] = ''; // make sure to unset any eventual altSide value from the DOM node
+
+  return data;
+}
+
+/**
+ * Get the opposite placement variation of the given one
+ * @method
+ * @memberof Popper.Utils
+ * @argument {String} placement variation
+ * @returns {String} flipped placement variation
+ */
+function getOppositeVariation(variation) {
+  if (variation === 'end') {
+    return 'start';
+  } else if (variation === 'start') {
+    return 'end';
+  }
+  return variation;
+}
+
+/**
+ * List of accepted placements to use as values of the `placement` option.<br />
+ * Valid placements are:
+ * - `auto`
+ * - `top`
+ * - `right`
+ * - `bottom`
+ * - `left`
+ *
+ * Each placement can have a variation from this list:
+ * - `-start`
+ * - `-end`
+ *
+ * Variations are interpreted easily if you think of them as the left to right
+ * written languages. Horizontally (`top` and `bottom`), `start` is left and `end`
+ * is right.<br />
+ * Vertically (`left` and `right`), `start` is top and `end` is bottom.
+ *
+ * Some valid examples are:
+ * - `top-end` (on top of reference, right aligned)
+ * - `right-start` (on right of reference, top aligned)
+ * - `bottom` (on bottom, centered)
+ * - `auto-right` (on the side with more space available, alignment depends by placement)
+ *
+ * @static
+ * @type {Array}
+ * @enum {String}
+ * @readonly
+ * @method placements
+ * @memberof Popper
+ */
+var placements = ['auto-start', 'auto', 'auto-end', 'top-start', 'top', 'top-end', 'right-start', 'right', 'right-end', 'bottom-end', 'bottom', 'bottom-start', 'left-end', 'left', 'left-start'];
+
+// Get rid of `auto` `auto-start` and `auto-end`
+var validPlacements = placements.slice(3);
+
+/**
+ * Given an initial placement, returns all the subsequent placements
+ * clockwise (or counter-clockwise).
+ *
+ * @method
+ * @memberof Popper.Utils
+ * @argument {String} placement - A valid placement (it accepts variations)
+ * @argument {Boolean} counter - Set to true to walk the placements counterclockwise
+ * @returns {Array} placements including their variations
+ */
+function clockwise(placement) {
+  var counter = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+  var index = validPlacements.indexOf(placement);
+  var arr = validPlacements.slice(index + 1).concat(validPlacements.slice(0, index));
+  return counter ? arr.reverse() : arr;
+}
+
+var BEHAVIORS = {
+  FLIP: 'flip',
+  CLOCKWISE: 'clockwise',
+  COUNTERCLOCKWISE: 'counterclockwise'
+};
+
+/**
+ * @function
+ * @memberof Modifiers
+ * @argument {Object} data - The data object generated by update method
+ * @argument {Object} options - Modifiers configuration and options
+ * @returns {Object} The data object, properly modified
+ */
+function flip(data, options) {
+  // if `inner` modifier is enabled, we can't use the `flip` modifier
+  if (isModifierEnabled(data.instance.modifiers, 'inner')) {
+    return data;
+  }
+
+  if (data.flipped && data.placement === data.originalPlacement) {
+    // seems like flip is trying to loop, probably there's not enough space on any of the flippable sides
+    return data;
+  }
+
+  var boundaries = getBoundaries(data.instance.popper, data.instance.reference, options.padding, options.boundariesElement);
+
+  var placement = data.placement.split('-')[0];
+  var placementOpposite = getOppositePlacement(placement);
+  var variation = data.placement.split('-')[1] || '';
+
+  var flipOrder = [];
+
+  switch (options.behavior) {
+    case BEHAVIORS.FLIP:
+      flipOrder = [placement, placementOpposite];
+      break;
+    case BEHAVIORS.CLOCKWISE:
+      flipOrder = clockwise(placement);
+      break;
+    case BEHAVIORS.COUNTERCLOCKWISE:
+      flipOrder = clockwise(placement, true);
+      break;
+    default:
+      flipOrder = options.behavior;
+  }
+
+  flipOrder.forEach(function (step, index) {
+    if (placement !== step || flipOrder.length === index + 1) {
+      return data;
+    }
+
+    placement = data.placement.split('-')[0];
+    placementOpposite = getOppositePlacement(placement);
+
+    var popperOffsets = getClientRect(data.offsets.popper);
+    var refOffsets = data.offsets.reference;
+
+    // using floor because the reference offsets may contain decimals we are not going to consider here
+    var floor = Math.floor;
+    var overlapsRef = placement === 'left' && floor(popperOffsets.right) > floor(refOffsets.left) || placement === 'right' && floor(popperOffsets.left) < floor(refOffsets.right) || placement === 'top' && floor(popperOffsets.bottom) > floor(refOffsets.top) || placement === 'bottom' && floor(popperOffsets.top) < floor(refOffsets.bottom);
+
+    var overflowsLeft = floor(popperOffsets.left) < floor(boundaries.left);
+    var overflowsRight = floor(popperOffsets.right) > floor(boundaries.right);
+    var overflowsTop = floor(popperOffsets.top) < floor(boundaries.top);
+    var overflowsBottom = floor(popperOffsets.bottom) > floor(boundaries.bottom);
+
+    var overflowsBoundaries = placement === 'left' && overflowsLeft || placement === 'right' && overflowsRight || placement === 'top' && overflowsTop || placement === 'bottom' && overflowsBottom;
+
+    // flip the variation if required
+    var isVertical = ['top', 'bottom'].indexOf(placement) !== -1;
+    var flippedVariation = !!options.flipVariations && (isVertical && variation === 'start' && overflowsLeft || isVertical && variation === 'end' && overflowsRight || !isVertical && variation === 'start' && overflowsTop || !isVertical && variation === 'end' && overflowsBottom);
+
+    if (overlapsRef || overflowsBoundaries || flippedVariation) {
+      // this boolean to detect any flip loop
+      data.flipped = true;
+
+      if (overlapsRef || overflowsBoundaries) {
+        placement = flipOrder[index + 1];
+      }
+
+      if (flippedVariation) {
+        variation = getOppositeVariation(variation);
+      }
+
+      data.placement = placement + (variation ? '-' + variation : '');
+      data.offsets.popper = getPopperOffsets(data.instance.popper, data.offsets.reference, data.placement);
+
+      data = runModifiers(data.instance.modifiers, data, 'flip');
+    }
+  });
+  return data;
+}
+
+/**
+ * @function
+ * @memberof Modifiers
+ * @argument {Object} data - The data object generated by update method
+ * @argument {Object} options - Modifiers configuration and options
+ * @returns {Object} The data object, properly modified
+ */
+function keepTogether(data) {
+  var popper = getClientRect(data.offsets.popper);
+  var reference = data.offsets.reference;
+  var placement = data.placement.split('-')[0];
+  var floor = Math.floor;
+  var isVertical = ['top', 'bottom'].indexOf(placement) !== -1;
+  var side = isVertical ? 'right' : 'bottom';
+  var opSide = isVertical ? 'left' : 'top';
+  var measurement = isVertical ? 'width' : 'height';
+
+  if (popper[side] < floor(reference[opSide])) {
+    data.offsets.popper[opSide] = floor(reference[opSide]) - popper[measurement];
+  }
+  if (popper[opSide] > floor(reference[side])) {
+    data.offsets.popper[opSide] = floor(reference[side]);
+  }
+
+  return data;
+}
+
+/**
+ * Converts a string containing value + unit into a px value number
+ * @function
+ * @memberof {modifiers~offset}
+ * @private
+ * @argument {String} str - Value + unit string
+ * @argument {String} measurement - `height` or `width`
+ * @argument {Object} popperOffsets
+ * @argument {Object} referenceOffsets
+ * @returns {Number|String}
+ * Value in pixels, or original string if no values were extracted
+ */
+function toValue(str, measurement, popperOffsets, referenceOffsets) {
+  // separate value from unit
+  var split = str.match(/((?:\-|\+)?\d*\.?\d*)(.*)/);
+  var value = +split[1];
+  var unit = split[2];
+
+  // If it's not a number it's an operator, I guess
+  if (!value) {
+    return str;
+  }
+
+  if (unit.indexOf('%') === 0) {
+    var element = void 0;
+    switch (unit) {
+      case '%p':
+        element = popperOffsets;
+        break;
+      case '%':
+      case '%r':
+      default:
+        element = referenceOffsets;
+    }
+
+    var rect = getClientRect(element);
+    return rect[measurement] / 100 * value;
+  } else if (unit === 'vh' || unit === 'vw') {
+    // if is a vh or vw, we calculate the size based on the viewport
+    var size = void 0;
+    if (unit === 'vh') {
+      size = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+    } else {
+      size = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    }
+    return size / 100 * value;
+  } else {
+    // if is an explicit pixel unit, we get rid of the unit and keep the value
+    // if is an implicit unit, it's px, and we return just the value
+    return value;
+  }
+}
+
+/**
+ * Parse an `offset` string to extrapolate `x` and `y` numeric offsets.
+ * @function
+ * @memberof {modifiers~offset}
+ * @private
+ * @argument {String} offset
+ * @argument {Object} popperOffsets
+ * @argument {Object} referenceOffsets
+ * @argument {String} basePlacement
+ * @returns {Array} a two cells array with x and y offsets in numbers
+ */
+function parseOffset(offset, popperOffsets, referenceOffsets, basePlacement) {
+  var offsets = [0, 0];
+
+  // Use height if placement is left or right and index is 0 otherwise use width
+  // in this way the first offset will use an axis and the second one
+  // will use the other one
+  var useHeight = ['right', 'left'].indexOf(basePlacement) !== -1;
+
+  // Split the offset string to obtain a list of values and operands
+  // The regex addresses values with the plus or minus sign in front (+10, -20, etc)
+  var fragments = offset.split(/(\+|\-)/).map(function (frag) {
+    return frag.trim();
+  });
+
+  // Detect if the offset string contains a pair of values or a single one
+  // they could be separated by comma or space
+  var divider = fragments.indexOf(find(fragments, function (frag) {
+    return frag.search(/,|\s/) !== -1;
+  }));
+
+  if (fragments[divider] && fragments[divider].indexOf(',') === -1) {
+    console.warn('Offsets separated by white space(s) are deprecated, use a comma (,) instead.');
+  }
+
+  // If divider is found, we divide the list of values and operands to divide
+  // them by ofset X and Y.
+  var splitRegex = /\s*,\s*|\s+/;
+  var ops = divider !== -1 ? [fragments.slice(0, divider).concat([fragments[divider].split(splitRegex)[0]]), [fragments[divider].split(splitRegex)[1]].concat(fragments.slice(divider + 1))] : [fragments];
+
+  // Convert the values with units to absolute pixels to allow our computations
+  ops = ops.map(function (op, index) {
+    // Most of the units rely on the orientation of the popper
+    var measurement = (index === 1 ? !useHeight : useHeight) ? 'height' : 'width';
+    var mergeWithPrevious = false;
+    return op
+    // This aggregates any `+` or `-` sign that aren't considered operators
+    // e.g.: 10 + +5 => [10, +, +5]
+    .reduce(function (a, b) {
+      if (a[a.length - 1] === '' && ['+', '-'].indexOf(b) !== -1) {
+        a[a.length - 1] = b;
+        mergeWithPrevious = true;
+        return a;
+      } else if (mergeWithPrevious) {
+        a[a.length - 1] += b;
+        mergeWithPrevious = false;
+        return a;
+      } else {
+        return a.concat(b);
+      }
+    }, [])
+    // Here we convert the string values into number values (in px)
+    .map(function (str) {
+      return toValue(str, measurement, popperOffsets, referenceOffsets);
+    });
+  });
+
+  // Loop trough the offsets arrays and execute the operations
+  ops.forEach(function (op, index) {
+    op.forEach(function (frag, index2) {
+      if (isNumeric(frag)) {
+        offsets[index] += frag * (op[index2 - 1] === '-' ? -1 : 1);
+      }
+    });
+  });
+  return offsets;
+}
+
+/**
+ * @function
+ * @memberof Modifiers
+ * @argument {Object} data - The data object generated by update method
+ * @argument {Object} options - Modifiers configuration and options
+ * @argument {Number|String} options.offset=0
+ * The offset value as described in the modifier description
+ * @returns {Object} The data object, properly modified
+ */
+function offset(data, _ref) {
+  var offset = _ref.offset;
+  var placement = data.placement,
+      _data$offsets = data.offsets,
+      popper = _data$offsets.popper,
+      reference = _data$offsets.reference;
+
+  var basePlacement = placement.split('-')[0];
+
+  var offsets = void 0;
+  if (isNumeric(+offset)) {
+    offsets = [+offset, 0];
+  } else {
+    offsets = parseOffset(offset, popper, reference, basePlacement);
+  }
+
+  if (basePlacement === 'left') {
+    popper.top += offsets[0];
+    popper.left -= offsets[1];
+  } else if (basePlacement === 'right') {
+    popper.top += offsets[0];
+    popper.left += offsets[1];
+  } else if (basePlacement === 'top') {
+    popper.left += offsets[0];
+    popper.top -= offsets[1];
+  } else if (basePlacement === 'bottom') {
+    popper.left += offsets[0];
+    popper.top += offsets[1];
+  }
+
+  data.popper = popper;
+  return data;
+}
+
+/**
+ * @function
+ * @memberof Modifiers
+ * @argument {Object} data - The data object generated by `update` method
+ * @argument {Object} options - Modifiers configuration and options
+ * @returns {Object} The data object, properly modified
+ */
+function preventOverflow(data, options) {
+  var boundariesElement = options.boundariesElement || getOffsetParent(data.instance.popper);
+  var boundaries = getBoundaries(data.instance.popper, data.instance.reference, options.padding, boundariesElement);
+  options.boundaries = boundaries;
+
+  var order = options.priority;
+  var popper = getClientRect(data.offsets.popper);
+
+  var check = {
+    primary: function primary(placement) {
+      var value = popper[placement];
+      if (popper[placement] < boundaries[placement] && !options.escapeWithReference) {
+        value = Math.max(popper[placement], boundaries[placement]);
+      }
+      return defineProperty({}, placement, value);
+    },
+    secondary: function secondary(placement) {
+      var mainSide = placement === 'right' ? 'left' : 'top';
+      var value = popper[mainSide];
+      if (popper[placement] > boundaries[placement] && !options.escapeWithReference) {
+        value = Math.min(popper[mainSide], boundaries[placement] - (placement === 'right' ? popper.width : popper.height));
+      }
+      return defineProperty({}, mainSide, value);
+    }
+  };
+
+  order.forEach(function (placement) {
+    var side = ['left', 'top'].indexOf(placement) !== -1 ? 'primary' : 'secondary';
+    popper = _extends({}, popper, check[side](placement));
+  });
+
+  data.offsets.popper = popper;
+
+  return data;
+}
+
+/**
+ * @function
+ * @memberof Modifiers
+ * @argument {Object} data - The data object generated by `update` method
+ * @argument {Object} options - Modifiers configuration and options
+ * @returns {Object} The data object, properly modified
+ */
+function shift(data) {
+  var placement = data.placement;
+  var basePlacement = placement.split('-')[0];
+  var shiftvariation = placement.split('-')[1];
+
+  // if shift shiftvariation is specified, run the modifier
+  if (shiftvariation) {
+    var reference = data.offsets.reference;
+    var popper = getClientRect(data.offsets.popper);
+    var isVertical = ['bottom', 'top'].indexOf(basePlacement) !== -1;
+    var side = isVertical ? 'left' : 'top';
+    var measurement = isVertical ? 'width' : 'height';
+
+    var shiftOffsets = {
+      start: defineProperty({}, side, reference[side]),
+      end: defineProperty({}, side, reference[side] + reference[measurement] - popper[measurement])
+    };
+
+    data.offsets.popper = _extends({}, popper, shiftOffsets[shiftvariation]);
+  }
+
+  return data;
+}
+
+/**
+ * @function
+ * @memberof Modifiers
+ * @argument {Object} data - The data object generated by update method
+ * @argument {Object} options - Modifiers configuration and options
+ * @returns {Object} The data object, properly modified
+ */
+function hide(data) {
+  if (!isModifierRequired(data.instance.modifiers, 'hide', 'preventOverflow')) {
+    return data;
+  }
+
+  var refRect = data.offsets.reference;
+  var bound = find(data.instance.modifiers, function (modifier) {
+    return modifier.name === 'preventOverflow';
+  }).boundaries;
+
+  if (refRect.bottom < bound.top || refRect.left > bound.right || refRect.top > bound.bottom || refRect.right < bound.left) {
+    // Avoid unnecessary DOM access if visibility hasn't changed
+    if (data.hide === true) {
+      return data;
+    }
+
+    data.hide = true;
+    data.attributes['x-out-of-boundaries'] = '';
+  } else {
+    // Avoid unnecessary DOM access if visibility hasn't changed
+    if (data.hide === false) {
+      return data;
+    }
+
+    data.hide = false;
+    data.attributes['x-out-of-boundaries'] = false;
+  }
+
+  return data;
+}
+
+/**
+ * @function
+ * @memberof Modifiers
+ * @argument {Object} data - The data object generated by `update` method
+ * @argument {Object} options - Modifiers configuration and options
+ * @returns {Object} The data object, properly modified
+ */
+function inner(data) {
+  var placement = data.placement;
+  var basePlacement = placement.split('-')[0];
+  var popper = getClientRect(data.offsets.popper);
+  var reference = getClientRect(data.offsets.reference);
+  var isHoriz = ['left', 'right'].indexOf(basePlacement) !== -1;
+
+  var subtractLength = ['top', 'left'].indexOf(basePlacement) === -1;
+
+  popper[isHoriz ? 'left' : 'top'] = reference[placement] - (subtractLength ? popper[isHoriz ? 'width' : 'height'] : 0);
+
+  data.placement = getOppositePlacement(placement);
+  data.offsets.popper = getClientRect(popper);
+
+  return data;
+}
+
+/**
+ * Modifier function, each modifier can have a function of this type assigned
+ * to its `fn` property.<br />
+ * These functions will be called on each update, this means that you must
+ * make sure they are performant enough to avoid performance bottlenecks.
+ *
+ * @function ModifierFn
+ * @argument {dataObject} data - The data object generated by `update` method
+ * @argument {Object} options - Modifiers configuration and options
+ * @returns {dataObject} The data object, properly modified
+ */
+
+/**
+ * Modifiers are plugins used to alter the behavior of your poppers.<br />
+ * Popper.js uses a set of 9 modifiers to provide all the basic functionalities
+ * needed by the library.
+ *
+ * Usually you don't want to override the `order`, `fn` and `onLoad` props.
+ * All the other properties are configurations that could be tweaked.
+ * @namespace modifiers
+ */
+var modifiers = {
+  /**
+   * Modifier used to shift the popper on the start or end of its reference
+   * element.<br />
+   * It will read the variation of the `placement` property.<br />
+   * It can be one either `-end` or `-start`.
+   * @memberof modifiers
+   * @inner
+   */
+  shift: {
+    /** @prop {number} order=100 - Index used to define the order of execution */
+    order: 100,
+    /** @prop {Boolean} enabled=true - Whether the modifier is enabled or not */
+    enabled: true,
+    /** @prop {ModifierFn} */
+    fn: shift
+  },
+
+  /**
+   * The `offset` modifier can shift your popper on both its axis.
+   *
+   * It accepts the following units:
+   * - `px` or unitless, interpreted as pixels
+   * - `%` or `%r`, percentage relative to the length of the reference element
+   * - `%p`, percentage relative to the length of the popper element
+   * - `vw`, CSS viewport width unit
+   * - `vh`, CSS viewport height unit
+   *
+   * For length is intended the main axis relative to the placement of the popper.<br />
+   * This means that if the placement is `top` or `bottom`, the length will be the
+   * `width`. In case of `left` or `right`, it will be the height.
+   *
+   * You can provide a single value (as `Number` or `String`), or a pair of values
+   * as `String` divided by a comma or one (or more) white spaces.<br />
+   * The latter is a deprecated method because it leads to confusion and will be
+   * removed in v2.<br />
+   * Additionally, it accepts additions and subtractions between different units.
+   * Note that multiplications and divisions aren't supported.
+   *
+   * Valid examples are:
+   * ```
+   * 10
+   * '10%'
+   * '10, 10'
+   * '10%, 10'
+   * '10 + 10%'
+   * '10 - 5vh + 3%'
+   * '-10px + 5vh, 5px - 6%'
+   * ```
+   *
+   * @memberof modifiers
+   * @inner
+   */
+  offset: {
+    /** @prop {number} order=200 - Index used to define the order of execution */
+    order: 200,
+    /** @prop {Boolean} enabled=true - Whether the modifier is enabled or not */
+    enabled: true,
+    /** @prop {ModifierFn} */
+    fn: offset,
+    /** @prop {Number|String} offset=0
+     * The offset value as described in the modifier description
+     */
+    offset: 0
+  },
+
+  /**
+   * Modifier used to prevent the popper from being positioned outside the boundary.
+   *
+   * An scenario exists where the reference itself is not within the boundaries.<br />
+   * We can say it has "escaped the boundaries" — or just "escaped".<br />
+   * In this case we need to decide whether the popper should either:
+   *
+   * - detach from the reference and remain "trapped" in the boundaries, or
+   * - if it should ignore the boundary and "escape with its reference"
+   *
+   * When `escapeWithReference` is set to`true` and reference is completely
+   * outside its boundaries, the popper will overflow (or completely leave)
+   * the boundaries in order to remain attached to the edge of the reference.
+   *
+   * @memberof modifiers
+   * @inner
+   */
+  preventOverflow: {
+    /** @prop {number} order=300 - Index used to define the order of execution */
+    order: 300,
+    /** @prop {Boolean} enabled=true - Whether the modifier is enabled or not */
+    enabled: true,
+    /** @prop {ModifierFn} */
+    fn: preventOverflow,
+    /**
+     * @prop {Array} priority=['left', 'right', 'top', 'bottom']
+     * Popper will try to prevent overflow following these priorities by default,
+     * then, it could overflow on the left and on top of the `boundariesElement`
+     */
+    priority: ['left', 'right', 'top', 'bottom'],
+    /**
+     * @prop {number} padding=5
+     * Amount of pixel used to define a minimum distance between the boundaries
+     * and the popper this makes sure the popper has always a little padding
+     * between the edges of its container
+     */
+    padding: 5,
+    /**
+     * @prop {String|HTMLElement} boundariesElement='scrollParent'
+     * Boundaries used by the modifier, can be `scrollParent`, `window`,
+     * `viewport` or any DOM element.
+     */
+    boundariesElement: 'scrollParent'
+  },
+
+  /**
+   * Modifier used to make sure the reference and its popper stay near eachothers
+   * without leaving any gap between the two. Expecially useful when the arrow is
+   * enabled and you want to assure it to point to its reference element.
+   * It cares only about the first axis, you can still have poppers with margin
+   * between the popper and its reference element.
+   * @memberof modifiers
+   * @inner
+   */
+  keepTogether: {
+    /** @prop {number} order=400 - Index used to define the order of execution */
+    order: 400,
+    /** @prop {Boolean} enabled=true - Whether the modifier is enabled or not */
+    enabled: true,
+    /** @prop {ModifierFn} */
+    fn: keepTogether
+  },
+
+  /**
+   * This modifier is used to move the `arrowElement` of the popper to make
+   * sure it is positioned between the reference element and its popper element.
+   * It will read the outer size of the `arrowElement` node to detect how many
+   * pixels of conjuction are needed.
+   *
+   * It has no effect if no `arrowElement` is provided.
+   * @memberof modifiers
+   * @inner
+   */
+  arrow: {
+    /** @prop {number} order=500 - Index used to define the order of execution */
+    order: 500,
+    /** @prop {Boolean} enabled=true - Whether the modifier is enabled or not */
+    enabled: true,
+    /** @prop {ModifierFn} */
+    fn: arrow,
+    /** @prop {String|HTMLElement} element='[x-arrow]' - Selector or node used as arrow */
+    element: '[x-arrow]'
+  },
+
+  /**
+   * Modifier used to flip the popper's placement when it starts to overlap its
+   * reference element.
+   *
+   * Requires the `preventOverflow` modifier before it in order to work.
+   *
+   * **NOTE:** this modifier will interrupt the current update cycle and will
+   * restart it if it detects the need to flip the placement.
+   * @memberof modifiers
+   * @inner
+   */
+  flip: {
+    /** @prop {number} order=600 - Index used to define the order of execution */
+    order: 600,
+    /** @prop {Boolean} enabled=true - Whether the modifier is enabled or not */
+    enabled: true,
+    /** @prop {ModifierFn} */
+    fn: flip,
+    /**
+     * @prop {String|Array} behavior='flip'
+     * The behavior used to change the popper's placement. It can be one of
+     * `flip`, `clockwise`, `counterclockwise` or an array with a list of valid
+     * placements (with optional variations).
+     */
+    behavior: 'flip',
+    /**
+     * @prop {number} padding=5
+     * The popper will flip if it hits the edges of the `boundariesElement`
+     */
+    padding: 5,
+    /**
+     * @prop {String|HTMLElement} boundariesElement='viewport'
+     * The element which will define the boundaries of the popper position,
+     * the popper will never be placed outside of the defined boundaries
+     * (except if keepTogether is enabled)
+     */
+    boundariesElement: 'viewport'
+  },
+
+  /**
+   * Modifier used to make the popper flow toward the inner of the reference element.
+   * By default, when this modifier is disabled, the popper will be placed outside
+   * the reference element.
+   * @memberof modifiers
+   * @inner
+   */
+  inner: {
+    /** @prop {number} order=700 - Index used to define the order of execution */
+    order: 700,
+    /** @prop {Boolean} enabled=false - Whether the modifier is enabled or not */
+    enabled: false,
+    /** @prop {ModifierFn} */
+    fn: inner
+  },
+
+  /**
+   * Modifier used to hide the popper when its reference element is outside of the
+   * popper boundaries. It will set a `x-out-of-boundaries` attribute which can
+   * be used to hide with a CSS selector the popper when its reference is
+   * out of boundaries.
+   *
+   * Requires the `preventOverflow` modifier before it in order to work.
+   * @memberof modifiers
+   * @inner
+   */
+  hide: {
+    /** @prop {number} order=800 - Index used to define the order of execution */
+    order: 800,
+    /** @prop {Boolean} enabled=true - Whether the modifier is enabled or not */
+    enabled: true,
+    /** @prop {ModifierFn} */
+    fn: hide
+  },
+
+  /**
+   * Applies the computed styles to the popper element.
+   *
+   * All the DOM manipulations are limited to this modifier. This is useful in case
+   * you want to integrate Popper.js inside a framework or view library and you
+   * want to delegate all the DOM manipulations to it.
+   *
+   * Just disable this modifier and define you own to achieve the desired effect.
+   *
+   * @memberof modifiers
+   * @inner
+   */
+  applyStyle: {
+    /** @prop {number} order=900 - Index used to define the order of execution */
+    order: 900,
+    /** @prop {Boolean} enabled=true - Whether the modifier is enabled or not */
+    enabled: true,
+    /** @prop {ModifierFn} */
+    fn: applyStyle,
+    /** @prop {Function} */
+    onLoad: applyStyleOnLoad,
+    /**
+     * @prop {Boolean} gpuAcceleration=true
+     * If true, it uses the CSS 3d transformation to position the popper.
+     * Otherwise, it will use the `top` and `left` properties.
+     */
+    gpuAcceleration: true
+  }
+};
+
+/**
+ * The `dataObject` is an object containing all the informations used by Popper.js
+ * this object get passed to modifiers and to the `onCreate` and `onUpdate` callbacks.
+ * @name dataObject
+ * @property {Object} data.instance The Popper.js instance
+ * @property {String} data.placement Placement applied to popper
+ * @property {String} data.originalPlacement Placement originally defined on init
+ * @property {Boolean} data.flipped True if popper has been flipped by flip modifier
+ * @property {Boolean} data.hide True if the reference element is out of boundaries, useful to know when to hide the popper.
+ * @property {HTMLElement} data.arrowElement Node used as arrow by arrow modifier
+ * @property {Object} data.styles Any CSS property defined here will be applied to the popper, it expects the JavaScript nomenclature (eg. `marginBottom`)
+ * @property {Object} data.boundaries Offsets of the popper boundaries
+ * @property {Object} data.offsets The measurements of popper, reference and arrow elements.
+ * @property {Object} data.offsets.popper `top`, `left`, `width`, `height` values
+ * @property {Object} data.offsets.reference `top`, `left`, `width`, `height` values
+ * @property {Object} data.offsets.arrow] `top` and `left` offsets, only one of them will be different from 0
+ */
+
+/**
+ * Default options provided to Popper.js constructor.<br />
+ * These can be overriden using the `options` argument of Popper.js.<br />
+ * To override an option, simply pass as 3rd argument an object with the same
+ * structure of this object, example:
+ * ```
+ * new Popper(ref, pop, {
+ *   modifiers: {
+ *     preventOverflow: { enabled: false }
+ *   }
+ * })
+ * ```
+ * @type {Object}
+ * @static
+ * @memberof Popper
+ */
+var DEFAULTS = {
+  /**
+   * Popper's placement
+   * @prop {Popper.placements} placement='bottom'
+   */
+  placement: 'bottom',
+
+  /**
+   * Whether events (resize, scroll) are initially enabled
+   * @prop {Boolean} eventsEnabled=true
+   */
+  eventsEnabled: true,
+
+  /**
+   * Set to true if you want to automatically remove the popper when
+   * you call the `destroy` method.
+   * @prop {Boolean} removeOnDestroy=false
+   */
+  removeOnDestroy: false,
+
+  /**
+   * Callback called when the popper is created.<br />
+   * By default, is set to no-op.<br />
+   * Access Popper.js instance with `data.instance`.
+   * @prop {onCreateCallback}
+   */
+  onCreate: function onCreate() {},
+
+  /**
+   * Callback called when the popper is updated, this callback is not called
+   * on the initialization/creation of the popper, but only on subsequent
+   * updates.<br />
+   * By default, is set to no-op.<br />
+   * Access Popper.js instance with `data.instance`.
+   * @prop {onUpdateCallback}
+   */
+  onUpdate: function onUpdate() {},
+
+  /**
+   * List of modifiers used to modify the offsets before they are applied to the popper.
+   * They provide most of the functionalities of Popper.js
+   * @prop {modifiers}
+   */
+  modifiers: modifiers
+};
+
+/**
+ * @callback onCreateCallback
+ * @param {dataObject} data
+ */
+
+/**
+ * @callback onUpdateCallback
+ * @param {dataObject} data
+ */
+
+// Utils
+// Methods
+var Popper = function () {
+  /**
+   * Create a new Popper.js instance
+   * @class Popper
+   * @param {HTMLElement|referenceObject} reference - The reference element used to position the popper
+   * @param {HTMLElement} popper - The HTML element used as popper.
+   * @param {Object} options - Your custom options to override the ones defined in [DEFAULTS](#defaults)
+   * @return {Object} instance - The generated Popper.js instance
+   */
+  function Popper(reference, popper) {
+    var _this = this;
+
+    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+    classCallCheck(this, Popper);
+
+    this.scheduleUpdate = function () {
+      return requestAnimationFrame(_this.update);
+    };
+
+    // make update() debounced, so that it only runs at most once-per-tick
+    this.update = debounce(this.update.bind(this));
+
+    // with {} we create a new object with the options inside it
+    this.options = _extends({}, Popper.Defaults, options);
+
+    // init state
+    this.state = {
+      isDestroyed: false,
+      isCreated: false,
+      scrollParents: []
+    };
+
+    // get reference and popper elements (allow jQuery wrappers)
+    this.reference = reference.jquery ? reference[0] : reference;
+    this.popper = popper.jquery ? popper[0] : popper;
+
+    // make sure to apply the popper position before any computation
+    setStyles(this.popper, { position: 'absolute' });
+
+    // refactoring modifiers' list (Object => Array)
+    this.modifiers = Object.keys(Popper.Defaults.modifiers).map(function (name) {
+      return _extends({
+        name: name
+      }, Popper.Defaults.modifiers[name]);
+    });
+
+    // assign default values to modifiers, making sure to override them with
+    // the ones defined by user
+    this.modifiers = this.modifiers.map(function (defaultConfig) {
+      var userConfig = options.modifiers && options.modifiers[defaultConfig.name] || {};
+      return _extends({}, defaultConfig, userConfig);
+    });
+
+    // add custom modifiers to the modifiers list
+    if (options.modifiers) {
+      this.options.modifiers = _extends({}, Popper.Defaults.modifiers, options.modifiers);
+      Object.keys(options.modifiers).forEach(function (name) {
+        // take in account only custom modifiers
+        if (Popper.Defaults.modifiers[name] === undefined) {
+          var modifier = options.modifiers[name];
+          modifier.name = name;
+          _this.modifiers.push(modifier);
+        }
+      });
+    }
+
+    // sort the modifiers by order
+    this.modifiers = this.modifiers.sort(function (a, b) {
+      return a.order - b.order;
+    });
+
+    // modifiers have the ability to execute arbitrary code when Popper.js get inited
+    // such code is executed in the same order of its modifier
+    // they could add new properties to their options configuration
+    // BE AWARE: don't add options to `options.modifiers.name` but to `modifierOptions`!
+    this.modifiers.forEach(function (modifierOptions) {
+      if (modifierOptions.enabled && isFunction(modifierOptions.onLoad)) {
+        modifierOptions.onLoad(_this.reference, _this.popper, _this.options, modifierOptions, _this.state);
+      }
+    });
+
+    // fire the first update to position the popper in the right place
+    this.update();
+
+    var eventsEnabled = this.options.eventsEnabled;
+    if (eventsEnabled) {
+      // setup event listeners, they will take care of update the position in specific situations
+      this.enableEventListeners();
+    }
+
+    this.state.eventsEnabled = eventsEnabled;
+  }
+
+  // We can't use class properties because they don't get listed in the
+  // class prototype and break stuff like Sinon stubs
+
+
+  createClass(Popper, [{
+    key: 'update',
+    value: function update$$1() {
+      return update.call(this);
+    }
+  }, {
+    key: 'destroy',
+    value: function destroy$$1() {
+      return destroy.call(this);
+    }
+  }, {
+    key: 'enableEventListeners',
+    value: function enableEventListeners$$1() {
+      return enableEventListeners.call(this);
+    }
+  }, {
+    key: 'disableEventListeners',
+    value: function disableEventListeners$$1() {
+      return disableEventListeners.call(this);
+    }
+
+    /**
+     * Schedule an update, it will run on the next UI update available
+     * @method scheduleUpdate
+     * @memberof Popper
+     */
+
+
+    /**
+     * Collection of utilities useful when writing custom modifiers.
+     * Starting from version 1.7, this method is available only if you
+     * include `popper-utils.js` before `popper.js`.
+     *
+     * **DEPRECATION**: This way to access PopperUtils is deprecated
+     * and will be removed in v2! Use the PopperUtils module directly instead.
+     * @static
+     * @type {Object}
+     * @deprecated since version 1.8
+     * @member Utils
+     * @memberof Popper
+     */
+
+  }]);
+  return Popper;
+}();
+
+/**
+ * The `referenceObject` is an object that provides an interface compatible with Popper.js
+ * and lets you use it as replacement of a real DOM node.<br />
+ * You can use this method to position a popper relatively to a set of coordinates
+ * in case you don't have a DOM node to use as reference.
+ *
+ * ```
+ * new Popper(referenceObject, popperNode);
+ * ```
+ *
+ * NB: This feature isn't supported in Internet Explorer 10
+ * @name referenceObject
+ * @property {Function} data.getBoundingClientRect
+ * A function that returns a set of coordinates compatible with the native `getBoundingClientRect` method.
+ * @property {number} data.clientWidth
+ * An ES6 getter that will return the width of the virtual reference element.
+ * @property {number} data.clientHeight
+ * An ES6 getter that will return the height of the virtual reference element.
+ */
+
+
+Popper.Utils = (typeof window !== 'undefined' ? window : global).PopperUtils;
+Popper.placements = placements;
+Popper.Defaults = DEFAULTS;
+
+/* harmony default export */ __webpack_exports__["a"] = (Popper);
+//# sourceMappingURL=popper.js.map
+
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(2)))
+
+/***/ }),
+/* 13 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_popper_js__ = __webpack_require__(12);
+
+
+/**
+ * Check if the given variable is a function
+ * @method
+ * @memberof Popper.Utils
+ * @argument {Any} functionToCheck - variable to check
+ * @returns {Boolean} answer to: is a function?
+ */
+function isFunction(functionToCheck) {
+  var getType = {};
+  return functionToCheck && getType.toString.call(functionToCheck) === '[object Function]';
+}
+
+var classCallCheck = function (instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+};
+
+var createClass = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];
+      descriptor.enumerable = descriptor.enumerable || false;
+      descriptor.configurable = true;
+      if ("value" in descriptor) descriptor.writable = true;
+      Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }
+
+  return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) defineProperties(Constructor, staticProps);
+    return Constructor;
+  };
+}();
+
+
+
+
+
+
+
+var _extends = Object.assign || function (target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i];
+
+    for (var key in source) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        target[key] = source[key];
+      }
+    }
+  }
+
+  return target;
+};
+
+var DEFAULT_OPTIONS = {
+  container: false,
+  delay: 0,
+  html: false,
+  placement: 'top',
+  title: '',
+  template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>',
+  trigger: 'hover focus',
+  offset: 0
+};
+
+var Tooltip = function () {
+  /**
+   * Create a new Tooltip.js instance
+   * @class Tooltip
+   * @param {HTMLElement} reference - The reference element used to position the tooltip
+   * @param {Object} options
+   * @param {String} options.placement=bottom
+   *      Placement of the popper accepted values: `top(-start, -end), right(-start, -end), bottom(-start, -end),
+   *      left(-start, -end)`
+   *
+   * @param {HTMLElement} reference - The DOM node used as reference of the tooltip (it can be a jQuery element).
+   * @param {Object} options - Configuration of the tooltip
+   * @param {HTMLElement|String|false} options.container=false - Append the tooltip to a specific element.
+   * @param {Number|Object} options.delay=0
+   *      Delay showing and hiding the tooltip (ms) - does not apply to manual trigger type.
+   *      If a number is supplied, delay is applied to both hide/show.
+   *      Object structure is: `{ show: 500, hide: 100 }`
+   * @param {Boolean} options.html=false - Insert HTML into the tooltip. If false, the content will inserted with `innerText`.
+   * @param {String|PlacementFunction} options.placement='top' - One of the allowed placements, or a function returning one of them.
+   * @param {String} options.template='<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+   *      Base HTML to used when creating the tooltip.
+   *      The tooltip's `title` will be injected into the `.tooltip-inner` or `.tooltip__inner`.
+   *      `.tooltip-arrow` or `.tooltip__arrow` will become the tooltip's arrow.
+   *      The outermost wrapper element should have the `.tooltip` class.
+   * @param {String|HTMLElement|TitleFunction} options.title='' - Default title value if `title` attribute isn't present.
+   * @param {String} options.trigger='hover focus'
+   *      How tooltip is triggered - click | hover | focus | manual.
+   *      You may pass multiple triggers; separate them with a space. `manual` cannot be combined with any other trigger.
+   * @param {HTMLElement} options.boundariesElement
+   *      The element used as boundaries for the tooltip. For more information refer to Popper.js'
+   *      [boundariesElement docs](https://popper.js.org/popper-documentation.html)
+   * @param {Number|String} options.offset=0 - Offset of the tooltip relative to its reference. For more information refer to Popper.js'
+   *      [offset docs](https://popper.js.org/popper-documentation.html)
+   * @return {Object} instance - The generated tooltip instance
+   */
+  function Tooltip(reference, options) {
+    classCallCheck(this, Tooltip);
+
+    _initialiseProps.call(this);
+
+    // apply user options over default ones
+    options = _extends({}, DEFAULT_OPTIONS, options);
+
+    reference.jquery && (reference = reference[0]);
+
+    // cache reference and options
+    this.reference = reference;
+    this.options = options;
+
+    // get events list
+    var events = typeof options.trigger === 'string' ? options.trigger.split(' ').filter(function (trigger) {
+      return ['click', 'hover', 'focus'].indexOf(trigger) !== -1;
+    }) : [];
+
+    // set initial state
+    this._isOpen = false;
+
+    // set event listeners
+    this._setEventListeners(reference, events, options);
+  }
+
+  //
+  // Public methods
+  //
+
+  /**
+   * Reveals an element's tooltip. This is considered a "manual" triggering of the tooltip.
+   * Tooltips with zero-length titles are never displayed.
+   * @memberof Tooltip
+   */
+
+
+  /**
+   * Hides an element’s tooltip. This is considered a “manual” triggering of the tooltip.
+   * @memberof Tooltip
+   */
+
+
+  /**
+   * Hides and destroys an element’s tooltip.
+   * @memberof Tooltip
+   */
+
+
+  /**
+   * Toggles an element’s tooltip. This is considered a “manual” triggering of the tooltip.
+   * @memberof Tooltip
+   */
+
+
+  //
+  // Defaults
+  //
+
+
+  //
+  // Private methods
+  //
+
+  createClass(Tooltip, [{
+    key: '_create',
+
+
+    /**
+     * Creates a new tooltip node
+     * @memberof Tooltip
+     * @private
+     * @param {HTMLElement} reference
+     * @param {String} template
+     * @param {String|HTMLElement|TitleFunction} title
+     * @param {Boolean} allowHtml
+     * @return {HTMLelement} tooltipNode
+     */
+    value: function _create(reference, template, title, allowHtml) {
+      // create tooltip element
+      var tooltipGenerator = window.document.createElement('div');
+      tooltipGenerator.innerHTML = template.trim();
+      var tooltipNode = tooltipGenerator.childNodes[0];
+
+      // add unique ID to our tooltip (needed for accessibility reasons)
+      tooltipNode.id = 'tooltip_' + Math.random().toString(36).substr(2, 10);
+
+      // set initial `aria-hidden` state to `false` (it's visible!)
+      tooltipNode.setAttribute('aria-hidden', 'false');
+
+      // add title to tooltip
+      var titleNode = tooltipGenerator.querySelector(this.innerSelector);
+      if (title.nodeType === 1) {
+        // if title is a node, append it only if allowHtml is true
+        allowHtml && titleNode.appendChild(title);
+      } else if (isFunction(title)) {
+        // if title is a function, call it and set innerText or innerHtml depending by `allowHtml` value
+        var titleText = title.call(reference);
+        allowHtml ? titleNode.innerHTML = titleText : titleNode.innerText = titleText;
+      } else {
+        // if it's just a simple text, set innerText or innerHtml depending by `allowHtml` value
+        allowHtml ? titleNode.innerHTML = title : titleNode.innerText = title;
+      }
+
+      // return the generated tooltip node
+      return tooltipNode;
+    }
+  }, {
+    key: '_show',
+    value: function _show(reference, options) {
+      // don't show if it's already visible
+      if (this._isOpen) {
+        return this;
+      }
+      this._isOpen = true;
+
+      // if the tooltipNode already exists, just show it
+      if (this._tooltipNode) {
+        this._tooltipNode.style.display = '';
+        this._tooltipNode.setAttribute('aria-hidden', 'false');
+        this.popperInstance.update();
+        return this;
+      }
+
+      // get title
+      var title = reference.getAttribute('title') || options.title;
+
+      // don't show tooltip if no title is defined
+      if (!title) {
+        return this;
+      }
+
+      // create tooltip node
+      var tooltipNode = this._create(reference, options.template, title, options.html);
+
+      // Add `aria-describedby` to our reference element for accessibility reasons
+      tooltipNode.setAttribute('aria-describedby', tooltipNode.id);
+
+      // append tooltip to container
+      var container = this._findContainer(options.container, reference);
+
+      this._append(tooltipNode, container);
+
+      var popperOptions = {
+        placement: options.placement,
+        arrowElement: this.arrowSelector
+      };
+
+      if (options.boundariesElement) {
+        popperOptions.boundariesElement = options.boundariesElement;
+      }
+
+      this.popperInstance = new __WEBPACK_IMPORTED_MODULE_0_popper_js__["a" /* default */](reference, tooltipNode, popperOptions);
+
+      this._tooltipNode = tooltipNode;
+
+      return this;
+    }
+  }, {
+    key: '_hide',
+    value: function _hide() /*reference, options*/{
+      // don't hide if it's already hidden
+      if (!this._isOpen) {
+        return this;
+      }
+
+      this._isOpen = false;
+
+      // hide tooltipNode
+      this._tooltipNode.style.display = 'none';
+      this._tooltipNode.setAttribute('aria-hidden', 'true');
+
+      return this;
+    }
+  }, {
+    key: '_dispose',
+    value: function _dispose() {
+      var _this = this;
+
+      if (this._tooltipNode) {
+        this._hide();
+
+        // destroy instance
+        this.popperInstance.destroy();
+
+        // remove event listeners
+        this._events.forEach(function (_ref) {
+          var func = _ref.func,
+              event = _ref.event;
+
+          _this.reference.removeEventListener(event, func);
+        });
+        this._events = [];
+
+        // destroy tooltipNode
+        this._tooltipNode.parentNode.removeChild(this._tooltipNode);
+        this._tooltipNode = null;
+      }
+      return this;
+    }
+  }, {
+    key: '_findContainer',
+    value: function _findContainer(container, reference) {
+      // if container is a query, get the relative element
+      if (typeof container === 'string') {
+        container = window.document.querySelector(container);
+      } else if (container === false) {
+        // if container is `false`, set it to reference parent
+        container = reference.parentNode;
+      }
+      return container;
+    }
+
+    /**
+     * Append tooltip to container
+     * @memberof Tooltip
+     * @private
+     * @param {HTMLElement} tooltip
+     * @param {HTMLElement|String|false} container
+     */
+
+  }, {
+    key: '_append',
+    value: function _append(tooltipNode, container) {
+      container.appendChild(tooltipNode);
+    }
+  }, {
+    key: '_setEventListeners',
+    value: function _setEventListeners(reference, events, options) {
+      var _this2 = this;
+
+      var directEvents = [];
+      var oppositeEvents = [];
+
+      events.forEach(function (event) {
+        switch (event) {
+          case 'hover':
+            directEvents.push('mouseenter');
+            oppositeEvents.push('mouseleave');
+          case 'focus':
+            directEvents.push('focus');
+            oppositeEvents.push('blur');
+          case 'click':
+            directEvents.push('click');
+            oppositeEvents.push('click');
+        }
+      });
+
+      // schedule show tooltip
+      directEvents.forEach(function (event) {
+        var func = function func(evt) {
+          if (_this2._isOpen === true) {
+            return;
+          }
+          evt.usedByTooltip = true;
+          _this2._scheduleShow(reference, options.delay, options, evt);
+        };
+        _this2._events.push({ event: event, func: func });
+        reference.addEventListener(event, func);
+      });
+
+      // schedule hide tooltip
+      oppositeEvents.forEach(function (event) {
+        var func = function func(evt) {
+          if (evt.usedByTooltip === true) {
+            return;
+          }
+          _this2._scheduleHide(reference, options.delay, options, evt);
+        };
+        _this2._events.push({ event: event, func: func });
+        reference.addEventListener(event, func);
+      });
+    }
+  }, {
+    key: '_scheduleShow',
+    value: function _scheduleShow(reference, delay, options /*, evt */) {
+      var _this3 = this;
+
+      // defaults to 0
+      var computedDelay = delay && delay.show || delay || 0;
+      window.setTimeout(function () {
+        return _this3._show(reference, options);
+      }, computedDelay);
+    }
+  }, {
+    key: '_scheduleHide',
+    value: function _scheduleHide(reference, delay, options, evt) {
+      var _this4 = this;
+
+      // defaults to 0
+      var computedDelay = delay && delay.hide || delay || 0;
+      window.setTimeout(function () {
+        if (_this4._isOpen === false) {
+          return;
+        }
+        if (!document.body.contains(_this4._tooltipNode)) {
+          return;
+        }
+
+        // if we are hiding because of a mouseleave, we must check that the new
+        // reference isn't the tooltip, because in this case we don't want to hide it
+        if (evt.type === 'mouseleave') {
+          var isSet = _this4._setTooltipNodeEvent(evt, reference, delay, options);
+
+          // if we set the new event, don't hide the tooltip yet
+          // the new event will take care to hide it if necessary
+          if (isSet) {
+            return;
+          }
+        }
+
+        _this4._hide(reference, options);
+      }, computedDelay);
+    }
+  }]);
+  return Tooltip;
+}();
+
+/**
+ * Placement function, its context is the Tooltip instance.
+ * @memberof Tooltip
+ * @callback PlacementFunction
+ * @param {HTMLElement} tooltip - tooltip DOM node.
+ * @param {HTMLElement} reference - reference DOM node.
+ * @return {String} placement - One of the allowed placement options.
+ */
+
+/**
+ * Title function, its context is the Tooltip instance.
+ * @memberof Tooltip
+ * @callback TitleFunction
+ * @return {String} placement - The desired title.
+ */
+
+
+var _initialiseProps = function _initialiseProps() {
+  var _this5 = this;
+
+  this.show = function () {
+    return _this5._show(_this5.reference, _this5.options);
+  };
+
+  this.hide = function () {
+    return _this5._hide();
+  };
+
+  this.dispose = function () {
+    return _this5._dispose();
+  };
+
+  this.toggle = function () {
+    if (_this5._isOpen) {
+      return _this5.hide();
+    } else {
+      return _this5.show();
+    }
+  };
+
+  this.arrowSelector = '.tooltip-arrow, .tooltip__arrow';
+  this.innerSelector = '.tooltip-inner, .tooltip__inner';
+  this._events = [];
+
+  this._setTooltipNodeEvent = function (evt, reference, delay, options) {
+    var relatedreference = evt.relatedreference || evt.toElement;
+
+    var callback = function callback(evt2) {
+      var relatedreference2 = evt2.relatedreference || evt2.toElement;
+
+      // Remove event listener after call
+      _this5._tooltipNode.removeEventListener(evt.type, callback);
+
+      // If the new reference is not the reference element
+      if (!reference.contains(relatedreference2)) {
+        // Schedule to hide tooltip
+        _this5._scheduleHide(reference, options.delay, options, evt2);
+      }
+    };
+
+    if (_this5._tooltipNode.contains(relatedreference)) {
+      // listen to mouseleave on the tooltip element to be able to hide the tooltip
+      _this5._tooltipNode.addEventListener(evt.type, callback);
+      return true;
+    }
+
+    return false;
+  };
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (Tooltip);
+//# sourceMappingURL=tooltip.js.map
+
+
+/***/ }),
+/* 14 */
 /***/ (function(module, exports) {
 
 module.exports = "data:image/png;base64,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"
 
 /***/ }),
-/* 11 */
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {module.exports =
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId])
+/******/ 			return installedModules[moduleId].exports;
+/******/
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// identity function for calling harmony imports with the correct context
+/******/ 	__webpack_require__.i = function(value) { return value; };
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ })
+/************************************************************************/
+/******/ ([
+/* 0 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_tooltip_js__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_tooltip_js___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_tooltip_js__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utils__ = __webpack_require__(1);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return defaultOptions; });
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+
+
+
+
+var positions = ['top', 'top-start', 'top-end', 'right', 'right-start', 'right-end', 'bottom', 'bottom-start', 'bottom-end', 'left', 'left-start', 'left-end'];
+
+var defaultOptions = {
+  defaultPlacement: 'top',
+  defaultClass: 'vue-tooltip-theme',
+  defaultTemplate: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>',
+  defaultDelay: 0,
+  defaultTrigger: 'hover focus',
+  defaultOffset: 0,
+  defaultContainer: 'body'
+};
+
+function getOptions(options) {
+  return {
+    placement: options.placement || directive.options.defaultPlacement,
+    delay: options.delay || directive.options.defaultDelay,
+    template: options.template || directive.options.defaultTemplate,
+    trigger: options.trigger || directive.options.defaultTrigger,
+    offset: options.offset || directive.options.defaultOffset,
+    container: options.container || directive.options.defaultContainer
+  };
+}
+
+function getPlacement(value, modifiers) {
+  var placement = value.placement;
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
+
+  try {
+    for (var _iterator = positions[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var pos = _step.value;
+
+      if (modifiers[pos]) {
+        placement = pos;
+      }
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+
+  return placement;
+}
+
+var SuperTooltip = function (_Tooltip) {
+  _inherits(SuperTooltip, _Tooltip);
+
+  function SuperTooltip() {
+    _classCallCheck(this, SuperTooltip);
+
+    return _possibleConstructorReturn(this, (SuperTooltip.__proto__ || Object.getPrototypeOf(SuperTooltip)).apply(this, arguments));
+  }
+
+  _createClass(SuperTooltip, [{
+    key: 'setClasses',
+    value: function setClasses(classes) {
+      var el = this._tooltipNode;
+
+      if (el) {
+        var oldClasses = this._oldClasses;
+        if (classes) {
+          if (oldClasses) {
+            __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1__utils__["a" /* replaceClasses */])(el, classes, oldClasses);
+          } else {
+            __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1__utils__["b" /* addClasses */])(el, classes);
+          }
+        } else if (oldClasses) {
+          __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1__utils__["c" /* removeClasses */])(el, oldClasses);
+        }
+        this._oldClasses = classes;
+      } else {
+        this._pendingClasses = classes;
+      }
+
+      this._classes = classes;
+    }
+  }, {
+    key: 'setContent',
+    value: function setContent(content) {
+      this.options.title = content;
+      if (this._tooltipNode) {
+        var el = this._tooltipNode.querySelector(this.innerSelector);
+
+        if (el) {
+          if (!content) {
+            el.innerHTML = '';
+          } else {
+            el.innerHTML = content;
+          }
+
+          this.popperInstance.update();
+        }
+      }
+    }
+  }, {
+    key: 'setOptions',
+    value: function setOptions(options) {
+      options = getOptions(options);
+
+      var needPopperUpdate = false;
+      var needRestart = false;
+
+      if (this.options.offset !== options.offset || this.options.placement !== options.placement) {
+        needPopperUpdate = true;
+      }
+
+      if (this.options.template !== options.template || this.options.trigger !== options.trigger || this.options.container !== options.container) {
+        needRestart = true;
+      }
+
+      for (var key in options) {
+        this.options[key] = options[key];
+      }
+
+      if (this._tooltipNode) {
+        if (needRestart) {
+          var isOpen = this._isOpen;
+
+          this.dispose();
+
+          var events = typeof this.options.trigger === 'string' ? options.trigger.split(' ').filter(function (trigger) {
+            return ['click', 'hover', 'focus'].indexOf(trigger) !== -1;
+          }) : [];
+          this._setEventListeners(this.reference, events, this.options);
+
+          this.setClasses(this._classes);
+
+          if (isOpen) {
+            this.show();
+          }
+        } else if (needPopperUpdate) {
+          this.popperInstance.update();
+        }
+      }
+    }
+  }, {
+    key: '_create',
+    value: function _create() {
+      var _get2;
+
+      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      var result = (_get2 = _get(SuperTooltip.prototype.__proto__ || Object.getPrototypeOf(SuperTooltip.prototype), '_create', this)).call.apply(_get2, [this].concat(args));
+
+      if (this.options.trigger.indexOf('hover') !== -1) {
+        result.addEventListener('mouseenter', this.hide);
+        result.addEventListener('click', this.hide);
+      }
+
+      return result;
+    }
+  }, {
+    key: '_dispose',
+    value: function _dispose() {
+      var _this2 = this;
+
+      if (this._tooltipNode) {
+        this._tooltipNode.removeEventListener('mouseenter', this.hide);
+        this._tooltipNode.removeEventListener('click', this.hide);
+      }
+
+      this._events.forEach(function (_ref) {
+        var func = _ref.func,
+            event = _ref.event;
+
+        _this2.reference.removeEventListener(event, func);
+      });
+      this._events = [];
+      return _get(SuperTooltip.prototype.__proto__ || Object.getPrototypeOf(SuperTooltip.prototype), '_dispose', this).call(this);
+    }
+  }, {
+    key: '_show',
+    value: function _show() {
+      var _get3,
+          _this3 = this;
+
+      for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        args[_key2] = arguments[_key2];
+      }
+
+      var result = (_get3 = _get(SuperTooltip.prototype.__proto__ || Object.getPrototypeOf(SuperTooltip.prototype), '_show', this)).call.apply(_get3, [this].concat(args));
+
+      if (this._pendingClasses) {
+        this.setClasses(this._pendingClasses);
+        this._pendingClasses = null;
+      }
+
+      // Fix position
+      setTimeout(function () {
+        _this3.popperInstance.update();
+      }, 0);
+
+      return result;
+    }
+  }]);
+
+  return SuperTooltip;
+}(__WEBPACK_IMPORTED_MODULE_0_tooltip_js___default.a);
+
+function createTooltip(el, value, modifiers) {
+  var content = value.content || value;
+  var classes = value.classes || directive.options.defaultClass;
+
+  var tooltip = el._tooltip = new SuperTooltip(el, _extends({
+    title: content,
+    html: true
+  }, getOptions(_extends({}, value, {
+    placement: getPlacement(value, modifiers)
+  }))));
+  tooltip.setClasses(classes);
+}
+
+function destroyTooltip(el) {
+  if (el._tooltip) {
+    el._tooltip.dispose();
+    delete el._tooltip;
+  }
+}
+
+var directive = {
+  options: defaultOptions,
+  bind: function bind(el, _ref2) {
+    var value = _ref2.value,
+        modifiers = _ref2.modifiers;
+
+    var content = value && value.content || value;
+    destroyTooltip(el);
+    if (content) {
+      createTooltip(el, value, modifiers);
+    }
+  },
+  update: function update(el, _ref3) {
+    var value = _ref3.value,
+        oldValue = _ref3.oldValue,
+        modifiers = _ref3.modifiers;
+
+    var content = value && value.content || value;
+    if (!content) {
+      destroyTooltip(el);
+    } else if (el._tooltip) {
+      var tooltip = el._tooltip;
+      // Content
+      tooltip.setContent(content);
+      // CSS Classes
+      tooltip.setClasses(value && value.classes || directive.options.defaultClass);
+      // Options
+      tooltip.setOptions(_extends({}, value, {
+        placement: getPlacement(value, modifiers)
+      }));
+    } else {
+      createTooltip(el, value, modifiers);
+    }
+  },
+  unbind: function unbind(el) {
+    destroyTooltip(el);
+  }
+};
+
+/* harmony default export */ __webpack_exports__["b"] = directive;
+
+/***/ }),
+/* 1 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony export (immutable) */ __webpack_exports__["b"] = addClasses;
+/* harmony export (immutable) */ __webpack_exports__["c"] = removeClasses;
+/* harmony export (immutable) */ __webpack_exports__["a"] = replaceClasses;
+
+function convertToArray(value) {
+  if (typeof value === 'string') {
+    value = value.split(' ');
+  }
+  return value;
+}
+
+function addClasses(el, classes) {
+  classes = convertToArray(classes);
+  classes.forEach(function (c) {
+    el.classList.add(c);
+  });
+}
+
+function removeClasses(el, classes) {
+  classes = convertToArray(classes);
+  classes.forEach(function (c) {
+    el.classList.remove(c);
+  });
+}
+
+function replaceClasses(el, newClasses, oldClasses) {
+  removeClasses(el, oldClasses);
+  addClasses(el, newClasses);
+}
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports) {
+
+module.exports = __webpack_require__(13);
+
+/***/ }),
+/* 3 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__v_tooltip__ = __webpack_require__(0);
+/* harmony export (immutable) */ __webpack_exports__["install"] = install;
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "VTooltip", function() { return VTooltip; });
+
+
+function install(Vue, options) {
+  if (install.installed) return;
+  install.installed = true;
+
+  options = Object.assign({}, __WEBPACK_IMPORTED_MODULE_0__v_tooltip__["a" /* defaultOptions */], options || {});
+  __WEBPACK_IMPORTED_MODULE_0__v_tooltip__["b" /* default */].options = options;
+  Vue.directive('tooltip', __WEBPACK_IMPORTED_MODULE_0__v_tooltip__["b" /* default */]);
+}
+
+var VTooltip = __WEBPACK_IMPORTED_MODULE_0__v_tooltip__["b" /* default */];
+
+var plugin = {
+  install: install
+};
+
+// Auto-install
+var GlobalVue = null;
+if (typeof window !== 'undefined') {
+  GlobalVue = window.Vue;
+} else if (typeof global !== 'undefined') {
+  GlobalVue = global.Vue;
+}
+if (GlobalVue) {
+  GlobalVue.use(plugin);
+}
+
+/* harmony default export */ __webpack_exports__["default"] = plugin;
+
+/***/ })
+/******/ ]);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIndlYnBhY2s6Ly8vd2VicGFjay9ib290c3RyYXAgYzdmNTA5OTNlNzdmMGJlYjhkNTkiLCJ3ZWJwYWNrOi8vLy4vc3JjL3YtdG9vbHRpcC5qcyIsIndlYnBhY2s6Ly8vLi9zcmMvdXRpbHMuanMiLCJ3ZWJwYWNrOi8vL2V4dGVybmFsIFwidG9vbHRpcC5qc1wiIiwid2VicGFjazovLy8uL3NyYy9pbmRleC5qcyJdLCJuYW1lcyI6WyJwb3NpdGlvbnMiLCJkZWZhdWx0T3B0aW9ucyIsImRlZmF1bHRQbGFjZW1lbnQiLCJkZWZhdWx0Q2xhc3MiLCJkZWZhdWx0VGVtcGxhdGUiLCJkZWZhdWx0RGVsYXkiLCJkZWZhdWx0VHJpZ2dlciIsImRlZmF1bHRPZmZzZXQiLCJkZWZhdWx0Q29udGFpbmVyIiwiZ2V0T3B0aW9ucyIsIm9wdGlvbnMiLCJwbGFjZW1lbnQiLCJkaXJlY3RpdmUiLCJkZWxheSIsInRlbXBsYXRlIiwidHJpZ2dlciIsIm9mZnNldCIsImNvbnRhaW5lciIsImdldFBsYWNlbWVudCIsInZhbHVlIiwibW9kaWZpZXJzIiwicG9zIiwiU3VwZXJUb29sdGlwIiwiY2xhc3NlcyIsImVsIiwiX3Rvb2x0aXBOb2RlIiwib2xkQ2xhc3NlcyIsIl9vbGRDbGFzc2VzIiwicmVwbGFjZUNsYXNzZXMiLCJhZGRDbGFzc2VzIiwicmVtb3ZlQ2xhc3NlcyIsIl9wZW5kaW5nQ2xhc3NlcyIsIl9jbGFzc2VzIiwiY29udGVudCIsInRpdGxlIiwicXVlcnlTZWxlY3RvciIsImlubmVyU2VsZWN0b3IiLCJpbm5lckhUTUwiLCJwb3BwZXJJbnN0YW5jZSIsInVwZGF0ZSIsIm5lZWRQb3BwZXJVcGRhdGUiLCJuZWVkUmVzdGFydCIsImtleSIsImlzT3BlbiIsIl9pc09wZW4iLCJkaXNwb3NlIiwiZXZlbnRzIiwic3BsaXQiLCJmaWx0ZXIiLCJpbmRleE9mIiwiX3NldEV2ZW50TGlzdGVuZXJzIiwicmVmZXJlbmNlIiwic2V0Q2xhc3NlcyIsInNob3ciLCJhcmdzIiwicmVzdWx0IiwiYWRkRXZlbnRMaXN0ZW5lciIsImhpZGUiLCJyZW1vdmVFdmVudExpc3RlbmVyIiwiX2V2ZW50cyIsImZvckVhY2giLCJmdW5jIiwiZXZlbnQiLCJzZXRUaW1lb3V0IiwiY3JlYXRlVG9vbHRpcCIsInRvb2x0aXAiLCJfdG9vbHRpcCIsImh0bWwiLCJkZXN0cm95VG9vbHRpcCIsImJpbmQiLCJvbGRWYWx1ZSIsInNldENvbnRlbnQiLCJzZXRPcHRpb25zIiwidW5iaW5kIiwiY29udmVydFRvQXJyYXkiLCJjbGFzc0xpc3QiLCJhZGQiLCJjIiwicmVtb3ZlIiwibmV3Q2xhc3NlcyIsImluc3RhbGwiLCJWdWUiLCJpbnN0YWxsZWQiLCJPYmplY3QiLCJhc3NpZ24iLCJ2dG9vbHRpcCIsIlZUb29sdGlwIiwicGx1Z2luIiwiR2xvYmFsVnVlIiwid2luZG93IiwiZ2xvYmFsIiwidXNlIl0sIm1hcHBpbmdzIjoiOztBQUFBO0FBQ0E7O0FBRUE7QUFDQTs7QUFFQTtBQUNBO0FBQ0E7O0FBRUE7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBOztBQUVBO0FBQ0E7O0FBRUE7QUFDQTs7QUFFQTtBQUNBO0FBQ0E7OztBQUdBO0FBQ0E7O0FBRUE7QUFDQTs7QUFFQTtBQUNBLG1EQUEyQyxjQUFjOztBQUV6RDtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBLGFBQUs7QUFDTDtBQUNBOztBQUVBO0FBQ0E7QUFDQTtBQUNBLG1DQUEyQiwwQkFBMEIsRUFBRTtBQUN2RCx5Q0FBaUMsZUFBZTtBQUNoRDtBQUNBO0FBQ0E7O0FBRUE7QUFDQSw4REFBc0QsK0RBQStEOztBQUVySDtBQUNBOztBQUVBO0FBQ0E7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztBQ2hFQTs7QUFFQTs7QUFFQSxJQUFNQSxZQUFZLENBQ2hCLEtBRGdCLEVBRWhCLFdBRmdCLEVBR2hCLFNBSGdCLEVBSWhCLE9BSmdCLEVBS2hCLGFBTGdCLEVBTWhCLFdBTmdCLEVBT2hCLFFBUGdCLEVBUWhCLGNBUmdCLEVBU2hCLFlBVGdCLEVBVWhC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Q0FBY0osTUFBZDtBQUNEOztBQUVELDhEQUFlQSxNQUFmLEMiLCJmaWxlIjoidi10b29sdGlwLmNvbW1vbi5qcyIsInNvdXJjZXNDb250ZW50IjpbIiBcdC8vIFRoZSBtb2R1bGUgY2FjaGVcbiBcdHZhciBpbnN0YWxsZWRNb2R1bGVzID0ge307XG5cbiBcdC8vIFRoZSByZXF1aXJlIGZ1bmN0aW9uXG4gXHRmdW5jdGlvbiBfX3dlYnBhY2tfcmVxdWlyZV9fKG1vZHVsZUlkKSB7XG5cbiBcdFx0Ly8gQ2hlY2sgaWYgbW9kdWxlIGlzIGluIGNhY2hlXG4gXHRcdGlmKGluc3RhbGxlZE1vZHVsZXNbbW9kdWxlSWRdKVxuIFx0XHRcdHJldHVybiBpbnN0YWxsZWRNb2R1bGVzW21vZHVsZUlkXS5leHBvcnRzO1xuXG4gXHRcdC8vIENyZWF0ZSBhIG5ldyBtb2R1bGUgKGFuZCBwdXQgaXQgaW50byB0aGUgY2FjaGUpXG4gXHRcdHZhciBtb2R1bGUgPSBpbnN0YWxsZWRNb2R1bGVzW21vZHVsZUlkXSA9IHtcbiBcdFx0XHRpOiBtb2R1bGVJZCxcbiBcdFx0XHRsOiBmYWxzZSxcbiBcdFx0XHRleHBvcnRzOiB7fVxuIFx0XHR9O1xuXG4gXHRcdC8vIEV4ZWN1dGUgdGhlIG1vZHVsZSBmdW5jdGlvblxuIFx0XHRtb2R1bGVzW21vZHVsZUlkXS5jYWxsKG1vZHVsZS5leHBvcnRzLCBtb2R1bGUsIG1vZHVsZS5leHBvcnRzLCBfX3dlYnBhY2tfcmVxdWlyZV9fKTtcblxuIFx0XHQvLyBGbGFnIHRoZSBtb2R1bGUgYXMgbG9hZGVkXG4gXHRcdG1vZHVsZS5sID0gdHJ1ZTtcblxuIFx0XHQvLyBSZXR1cm4gdGhlIGV4cG9ydHMgb2YgdGhlIG1vZHVsZVxuIFx0XHRyZXR1cm4gbW9kdWxlLmV4cG9ydHM7XG4gXHR9XG5cblxuIFx0Ly8gZXhwb3NlIHRoZSBtb2R1bGVzIG9iamVjdCAoX193ZWJwYWNrX21vZHVsZXNfXylcbiBcdF9fd2VicGFja19yZXF1aXJlX18ubSA9IG1vZHVsZXM7XG5cbiBcdC8vIGV4cG9zZSB0aGUgbW9kdWxlIGNhY2hlXG4gXHRfX3dlYnBhY2tfcmVxdWlyZV9fLmMgPSBpbnN0YWxsZWRNb2R1bGVzO1xuXG4gXHQvLyBpZGVudGl0eSBmdW5jdGlvbiBmb3IgY2FsbGluZyBoYXJtb255IGltcG9ydHMgd2l0aCB0aGUgY29ycmVjdCBjb250ZXh0XG4gXHRfX3dlYnBhY2tfcmVxdWlyZV9fLmkgPSBmdW5jdGlvbih2YWx1ZSkgeyByZXR1cm4gdmFsdWU7IH07XG5cbiBcdC8vIGRlZmluZSBnZXR0ZXIgZnVuY3Rpb24gZm9yIGhhcm1vbnkgZXhwb3J0c1xuIFx0X193ZWJwYWNrX3JlcXVpcmVfXy5kID0gZnVuY3Rpb24oZXhwb3J0cywgbmFtZSwgZ2V0dGVyKSB7XG4gXHRcdGlmKCFfX3dlYnBhY2tfcmVxdWlyZV9fLm8oZXhwb3J0cywgbmFtZSkpIHtcbiBcdFx0XHRPYmplY3QuZGVmaW5lUHJvcGVydHkoZXhwb3J0cywgbmFtZSwge1xuIFx0XHRcdFx0Y29uZmlndXJhYmxlOiBmYWxzZSxcbiBcdFx0XHRcdGVudW1lcmFibGU6IHRydWUsXG4gXHRcdFx0XHRnZXQ6IGdldHRlclxuIFx0XHRcdH0pO1xuIFx0XHR9XG4gXHR9O1xuXG4gXHQvLyBnZXREZWZhdWx0RXhwb3J0IGZ1bmN0aW9uIGZvciBjb21wYXRpYmlsaXR5IHdpdGggbm9uLWhhcm1vbnkgbW9kdWxlc1xuIFx0X193ZWJwYWNrX3JlcXVpcmVfXy5uID0gZnVuY3Rpb24obW9kdWxlKSB7XG4gXHRcdHZhciBnZXR0ZXIgPSBtb2R1bGUgJiYgbW9kdWxlLl9fZXNNb2R1bGUgP1xuIFx0XHRcdGZ1bmN0aW9uIGdldERlZmF1bHQoKSB7IHJldHVybiBtb2R1bGVbJ2RlZmF1bHQnXTsgfSA6XG4gXHRcdFx0ZnVuY3Rpb24gZ2V0TW9kdWxlRXhwb3J0cygpIHsgcmV0dXJuIG1vZHVsZTsgfTtcbiBcdFx0X193ZWJwYWNrX3JlcXVpcmVfXy5kKGdldHRlciwgJ2EnLCBnZXR0ZXIpO1xuIFx0XHRyZXR1cm4gZ2V0dGVyO1xuIFx0fTtcblxuIFx0Ly8gT2JqZWN0LnByb3RvdHlwZS5oYXNPd25Qcm9wZXJ0eS5jYWxsXG4gXHRfX3dlYnBhY2tfcmVxdWlyZV9fLm8gPSBmdW5jdGlvbihvYmplY3QsIHByb3BlcnR5KSB7IHJldHVybiBPYmplY3QucHJvdG90eXBlLmhhc093blByb3BlcnR5LmNhbGwob2JqZWN0LCBwcm9wZXJ0eSk7IH07XG5cbiBcdC8vIF9fd2VicGFja19wdWJsaWNfcGF0aF9fXG4gXHRfX3dlYnBhY2tfcmVxdWlyZV9fLnAgPSBcIlwiO1xuXG4gXHQvLyBMb2FkIGVudHJ5IG1vZHVsZSBhbmQgcmV0dXJuIGV4cG9ydHNcbiBcdHJldHVybiBfX3dlYnBhY2tfcmVxdWlyZV9fKF9fd2VicGFja19yZXF1aXJlX18ucyA9IDMpO1xuXG5cblxuLy8gV0VCUEFDSyBGT09URVIgLy9cbi8vIHdlYnBhY2svYm9vdHN0cmFwIGM3ZjUwOTkzZTc3ZjBiZWI4ZDU5IiwiaW1wb3J0IFRvb2x0aXAgZnJvbSAndG9vbHRpcC5qcydcclxuXHJcbmltcG9ydCB7IGFkZENsYXNzZXMsIHJlbW92ZUNsYXNzZXMsIHJlcGxhY2VDbGFzc2VzIH0gZnJvbSAnLi91dGlscydcclxuXHJcbmNvbnN0IHBvc2l0aW9ucyA9IFtcclxuICAndG9wJyxcclxuICAndG9wLXN0YXJ0JyxcclxuICAndG9wLWVuZCcsXHJcbiAgJ3JpZ2h0JyxcclxuICAncmlnaHQtc3RhcnQnLFxyXG4gICdyaWdodC1lbmQnLFxyXG4gICdib3R0b20nLFxyXG4gICdib3R0b20tc3RhcnQnLFxyXG4gICdib3R0b20tZW5kJyxcclxuICAnbGVmdCcsXHJcbiAgJ2xlZnQtc3RhcnQnLFxyXG4gICdsZWZ0LWVuZCcsXHJcbl1cclxuXHJcbmV4cG9ydCBjb25zdCBkZWZhdWx0T3B0aW9ucyA9IHtcclxuICBkZWZhdWx0UGxhY2VtZW50OiAndG9wJyxcclxuICBkZWZhdWx0Q2xhc3M6ICd2dWUtdG9vbHRpcC10aGVtZScsXHJcbiAgZGVmYXVsdFRlbXBsYXRlOiAnPGRpdiBjbGFzcz1cInRvb2x0aXBcIiByb2xlPVwidG9vbHRpcFwiPjxkaXYgY2xhc3M9XCJ0b29sdGlwLWFycm93XCI+PC9kaXY+PGRpdiBjbGFzcz1cInRvb2x0aXAtaW5uZXJcIj48L2Rpdj48L2Rpdj4nLFxyXG4gIGRlZmF1bHREZWxheTogMCxcclxuICBkZWZhdWx0VHJpZ2dlcjogJ2hvdmVyIGZvY3VzJyxcclxuICBkZWZhdWx0T2Zmc2V0OiAwLFxyXG4gIGRlZmF1bHRDb250YWluZXI6ICdib2R5JyxcclxufVxyXG5cclxuZnVuY3Rpb24gZ2V0T3B0aW9ucyAob3B0aW9ucykge1xyXG4gIHJldHVybiB7XHJcbiAgICBwbGFjZW1lbnQ6IG9wdGlvbnMucGxhY2VtZW50IHx8IGRpcmVjdGl2ZS5vcHRpb25zLmRlZmF1bHRQbGFjZW1lbnQsXHJcbiAgICBkZWxheTogb3B0aW9ucy5kZWxheSB8fCBkaXJlY3RpdmUub3B0aW9ucy5kZWZhdWx0RGVsYXksXHJcbiAgICB0ZW1wbGF0ZTogb3B0aW9ucy50ZW1wbGF0ZSB8fCBkaXJlY3RpdmUub3B0aW9ucy5kZWZhdWx0VGVtcGxhdGUsXHJcbiAgICB0cmlnZ2VyOiBvcHRpb25zLnRyaWdnZXIgfHwgZGlyZWN0aXZlLm9wdGlvbnMuZGVmYXVsdFRyaWdnZXIsXHJcbiAgICBvZmZzZXQ6IG9wdGlvbnMub2Zmc2V0IHx8IGRpcmVjdGl2ZS5vcHRpb25zLmRlZmF1bHRPZmZzZXQsXHJcbiAgICBjb250YWluZXI6IG9wdGlvbnMuY29udGFpbmVyIHx8IGRpcmVjdGl2ZS5vcHRpb25zLmRlZmF1bHRDb250YWluZXIsXHJcbiAgfVxyXG59XHJcblxyXG5mdW5jdGlvbiBnZXRQbGFjZW1lbnQgKHZhbHVlLCBtb2RpZmllcnMpIHtcclxuICBsZXQgcGxhY2VtZW50ID0gdmFsdWUucGxhY2VtZW50XHJcbiAgZm9yIChjb25zdCBwb3Mgb2YgcG9zaXRpb25zKSB7XHJcbiAgICBpZiAobW9kaWZpZXJzW3Bvc10pIHtcclxuICAgICAgcGxhY2VtZW50ID0gcG9zXHJcbiAgICB9XHJcbiAgfVxyXG4gIHJldHVybiBwbGFjZW1lbnRcclxufVxyXG5cclxuY2xhc3MgU3VwZXJUb29sdGlwIGV4dGVuZHMgVG9vbHRpcCB7XHJcbiAgc2V0Q2xhc3NlcyAoY2xhc3Nlcykge1xyXG4gICAgY29uc3QgZWwgPSB0aGlzLl90b29sdGlwTm9kZVxyXG5cclxuICAgIGlmIChlbCkge1xyXG4gICAgICBjb25zdCBvbGRDbGFzc2VzID0gdGhpcy5fb2xkQ2xhc3Nlc1xyXG4gICAgICBpZiAoY2xhc3Nlcykge1xyXG4gICAgICAgIGlmIChvbGRDbGFzc2VzKSB7XHJcbiAgICAgICAgICByZXBsYWNlQ2xhc3NlcyhlbCwgY2xhc3Nlcywgb2xkQ2xhc3NlcylcclxuICAgICAgICB9IGVsc2Uge1xyXG4gICAgICAgICAgYWRkQ2xhc3NlcyhlbCwgY2xhc3NlcylcclxuICAgICAgICB9XHJcbiAgICAgIH0gZWxzZSBpZiAob2xkQ2xhc3Nlcykge1xyXG4gICAgICAgIHJlbW92ZUNsYXNzZXMoZWwsIG9sZENsYXNzZXMpXHJcbiAgICAgIH1cclxuICAgICAgdGhpcy5fb2xkQ2xhc3NlcyA9IGNsYXNzZXNcclxuICAgIH0gZWxzZSB7XHJcbiAgICAgIHRoaXMuX3BlbmRpbmdDbGFzc2VzID0gY2xhc3Nlc1xyXG4gICAgfVxyXG5cclxuICAgIHRoaXMuX2NsYXNzZXMgPSBjbGFzc2VzXHJcbiAgfVxyXG5cclxuICBzZXRDb250ZW50IChjb250ZW50KSB7XHJcbiAgICB0aGlzLm9wdGlvbnMudGl0bGUgPSBjb250ZW50XHJcbiAgICBpZiAodGhpcy5fdG9vbHRpcE5vZGUpIHtcclxuICAgICAgY29uc3QgZWwgPSB0aGlzLl90b29sdGlwTm9kZS5xdWVyeVNlbGVjdG9yKHRoaXMuaW5uZXJTZWxlY3RvcilcclxuXHJcbiAgICAgIGlmIChlbCkge1xyXG4gICAgICAgIGlmICghY29udGVudCkge1xyXG4gICAgICAgICAgZWwuaW5uZXJIVE1MID0gJydcclxuICAgICAgICB9IGVsc2Uge1xyXG4gICAgICAgICAgZWwuaW5uZXJIVE1MID0gY29udGVudFxyXG4gICAgICAgIH1cclxuXHJcbiAgICAgICAgdGhpcy5wb3BwZXJJbnN0YW5jZS51cGRhdGUoKVxyXG4gICAgICB9XHJcbiAgICB9XHJcbiAgfVxyXG5cclxuICBzZXRPcHRpb25zIChvcHRpb25zKSB7XHJcbiAgICBvcHRpb25zID0gZ2V0T3B0aW9ucyhvcHRpb25zKVxyXG5cclxuICAgIGxldCBuZWVkUG9wcGVyVXBkYXRlID0gZmFsc2VcclxuICAgIGxldCBuZWVkUmVzdGFydCA9IGZhbHNlXHJcblxyXG4gICAgaWYgKFxyXG4gICAgICB0aGlzLm9wdGlvbnMub2Zmc2V0ICE9PSBvcHRpb25zLm9mZnNldCB8fFxyXG4gICAgICB0aGlzLm9wdGlvbnMucGxhY2VtZW50ICE9PSBvcHRpb25zLnBsYWNlbWVudFxyXG4gICAgKSB7XHJcbiAgICAgIG5lZWRQb3BwZXJVcGRhdGUgPSB0cnVlXHJcbiAgICB9XHJcblxyXG4gICAgaWYgKFxyXG4gICAgICB0aGlzLm9wdGlvbnMudGVtcGxhdGUgIT09IG9wdGlvbnMudGVtcGxhdGUgfHxcclxuICAgICAgdGhpcy5vcHRpb25zLnRyaWdnZXIgIT09IG9wdGlvbnMudHJpZ2dlciB8fFxyXG4gICAgICB0aGlzLm9wdGlvbnMuY29udGFpbmVyICE9PSBvcHRpb25zLmNvbnRhaW5lclxyXG4gICAgKSB7XHJcbiAgICAgIG5lZWRSZXN0YXJ0ID0gdHJ1ZVxyXG4gICAgfVxyXG5cclxuICAgIGZvciAoY29uc3Qga2V5IGluIG9wdGlvbnMpIHtcclxuICAgICAgdGhpcy5vcHRpb25zW2tleV0gPSBvcHRpb25zW2tleV1cclxuICAgIH1cclxuXHJcbiAgICBpZiAodGhpcy5fdG9vbHRpcE5vZGUpIHtcclxuICAgICAgaWYgKG5lZWRSZXN0YXJ0KSB7XHJcbiAgICAgICAgY29uc3QgaXNPcGVuID0gdGhpcy5faXNPcGVuXHJcblxyXG4gICAgICAgIHRoaXMuZGlzcG9zZSgpXHJcblxyXG4gICAgICAgIGNvbnN0IGV2ZW50cyA9IHR5cGVvZiB0aGlzLm9wdGlvbnMudHJpZ2dlciA9PT0gJ3N0cmluZydcclxuICAgICAgICAgID8gb3B0aW9ucy50cmlnZ2VyXHJcbiAgICAgICAgICAgIC5zcGxpdCgnICcpXHJcbiAgICAgICAgICAgIC5maWx0ZXIoXHJcbiAgICAgICAgICAgICAgdHJpZ2dlciA9PiBbJ2NsaWNrJywgJ2hvdmVyJywgJ2ZvY3VzJ10uaW5kZXhPZih0cmlnZ2VyKSAhPT0gLTFcclxuICAgICAgICAgICAgKVxyXG4gICAgICAgICAgOiBbXVxyXG4gICAgICAgIHRoaXMuX3NldEV2ZW50TGlzdGVuZXJzKHRoaXMucmVmZXJlbmNlLCBldmVudHMsIHRoaXMub3B0aW9ucylcclxuXHJcbiAgICAgICAgdGhpcy5zZXRDbGFzc2VzKHRoaXMuX2NsYXNzZXMpXHJcblxyXG4gICAgICAgIGlmIChpc09wZW4pIHtcclxuICAgICAgICAgIHRoaXMuc2hvdygpXHJcbiAgICAgICAgfVxyXG4gICAgICB9IGVsc2UgaWYgKG5lZWRQb3BwZXJVcGRhdGUpIHtcclxuICAgICAgICB0aGlzLnBvcHBlckluc3RhbmNlLnVwZGF0ZSgpXHJcbiAgICAgIH1cclxuICAgIH1cclxuICB9XHJcblxyXG4gIF9jcmVhdGUgKC4uLmFyZ3MpIHtcclxuICAgIGNvbnN0IHJlc3VsdCA9IHN1cGVyLl9jcmVhdGUoLi4uYXJncylcclxuXHJcbiAgICBpZiAodGhpcy5vcHRpb25zLnRyaWdnZXIuaW5kZXhPZignaG92ZXInKSAhPT0gLTEpIHtcclxuICAgICAgcmVzdWx0LmFkZEV2ZW50TGlzdGVuZXIoJ21vdXNlZW50ZXInLCB0aGlzLmhpZGUpXHJcbiAgICAgIHJlc3VsdC5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsIHRoaXMuaGlkZSlcclxuICAgIH1cclxuXHJcbiAgICByZXR1cm4gcmVzdWx0XHJcbiAgfVxyXG5cclxuICBfZGlzcG9zZSAoKSB7XHJcbiAgICBpZiAodGhpcy5fdG9vbHRpcE5vZGUpIHtcclxuICAgICAgdGhpcy5fdG9vbHRpcE5vZGUucmVtb3ZlRXZlbnRMaXN0ZW5lcignbW91c2VlbnRlcicsIHRoaXMuaGlkZSlcclxuICAgICAgdGhpcy5fdG9vbHRpcE5vZGUucmVtb3ZlRXZlbnRMaXN0ZW5lcignY2xpY2snLCB0aGlzLmhpZGUpXHJcbiAgICB9XHJcblxyXG4gICAgdGhpcy5fZXZlbnRzLmZvckVhY2goKHsgZnVuYywgZXZlbnQgfSkgPT4ge1xyXG4gICAgICB0aGlzLnJlZmVyZW5jZS5yZW1vdmVFdmVudExpc3RlbmVyKGV2ZW50LCBmdW5jKVxyXG4gICAgfSlcclxuICAgIHRoaXMuX2V2ZW50cyA9IFtdXHJcbiAgICByZXR1cm4gc3VwZXIuX2Rpc3Bvc2UoKVxyXG4gIH1cclxuXHJcbiAgX3Nob3cgKC4uLmFyZ3MpIHtcclxuICAgIGNvbnN0IHJlc3VsdCA9IHN1cGVyLl9zaG93KC4uLmFyZ3MpXHJcblxyXG4gICAgaWYgKHRoaXMuX3BlbmRpbmdDbGFzc2VzKSB7XHJcbiAgICAgIHRoaXMuc2V0Q2xhc3Nlcyh0aGlzLl9wZW5kaW5nQ2xhc3NlcylcclxuICAgICAgdGhpcy5fcGVuZGluZ0NsYXNzZXMgPSBudWxsXHJcbiAgICB9XHJcblxyXG4gICAgLy8gRml4IHBvc2l0aW9uXHJcbiAgICBzZXRUaW1lb3V0KCgpID0+IHtcclxuICAgICAgdGhpcy5wb3BwZXJJbnN0YW5jZS51cGRhdGUoKVxyXG4gICAgfSwgMClcclxuXHJcbiAgICByZXR1cm4gcmVzdWx0XHJcbiAgfVxyXG59XHJcblxyXG5mdW5jdGlvbiBjcmVhdGVUb29sdGlwIChlbCwgdmFsdWUsIG1vZGlmaWVycykge1xyXG4gIGNvbnN0IGNvbnRlbnQgPSB2YWx1ZS5jb250ZW50IHx8IHZhbHVlXHJcbiAgbGV0IGNsYXNzZXMgPSB2YWx1ZS5jbGFzc2VzIHx8IGRpcmVjdGl2ZS5vcHRpb25zLmRlZmF1bHRDbGFzc1xyXG5cclxuICBjb25zdCB0b29sdGlwID0gZWwuX3Rvb2x0aXAgPSBuZXcgU3VwZXJUb29sdGlwKGVsLCB7XHJcbiAgICB0aXRsZTogY29udGVudCxcclxuICAgIGh0bWw6IHRydWUsXHJcbiAgICAuLi5nZXRPcHRpb25zKHtcclxuICAgICAgLi4udmFsdWUsXHJcbiAgICAgIHBsYWNlbWVudDogZ2V0UGxhY2VtZW50KHZhbHVlLCBtb2RpZmllcnMpLFxyXG4gICAgfSksXHJcbiAgfSlcclxuICB0b29sdGlwLnNldENsYXNzZXMoY2xhc3NlcylcclxufVxyXG5cclxuZnVuY3Rpb24gZGVzdHJveVRvb2x0aXAgKGVsKSB7XHJcbiAgaWYgKGVsLl90b29sdGlwKSB7XHJcbiAgICBlbC5fdG9vbHRpcC5kaXNwb3NlKClcclxuICAgIGRlbGV0ZSBlbC5fdG9vbHRpcFxyXG4gIH1cclxufVxyXG5cclxuY29uc3QgZGlyZWN0aXZlID0ge1xyXG4gIG9wdGlvbnM6IGRlZmF1bHRPcHRpb25zLFxyXG4gIGJpbmQgKGVsLCB7IHZhbHVlLCBtb2RpZmllcnMgfSkge1xyXG4gICAgY29uc3QgY29udGVudCA9IHZhbHVlICYmIHZhbHVlLmNvbnRlbnQgfHwgdmFsdWVcclxuICAgIGRlc3Ryb3lUb29sdGlwKGVsKVxyXG4gICAgaWYgKGNvbnRlbnQpIHtcclxuICAgICAgY3JlYXRlVG9vbHRpcChlbCwgdmFsdWUsIG1vZGlmaWVycylcclxuICAgIH1cclxuICB9LFxyXG4gIHVwZGF0ZSAoZWwsIHsgdmFsdWUsIG9sZFZhbHVlLCBtb2RpZmllcnMgfSkge1xyXG4gICAgY29uc3QgY29udGVudCA9IHZhbHVlICYmIHZhbHVlLmNvbnRlbnQgfHwgdmFsdWVcclxuICAgIGlmICghY29udGVudCkge1xyXG4gICAgICBkZXN0cm95VG9vbHRpcChlbClcclxuICAgIH0gZWxzZSBpZiAoZWwuX3Rvb2x0aXApIHtcclxuICAgICAgY29uc3QgdG9vbHRpcCA9IGVsLl90b29sdGlwXHJcbiAgICAgIC8vIENvbnRlbnRcclxuICAgICAgdG9vbHRpcC5zZXRDb250ZW50KGNvbnRlbnQpXHJcbiAgICAgIC8vIENTUyBDbGFzc2VzXHJcbiAgICAgIHRvb2x0aXAuc2V0Q2xhc3NlcygodmFsdWUgJiYgdmFsdWUuY2xhc3NlcykgfHwgZGlyZWN0aXZlLm9wdGlvbnMuZGVmYXVsdENsYXNzKVxyXG4gICAgICAvLyBPcHRpb25zXHJcbiAgICAgIHRvb2x0aXAuc2V0T3B0aW9ucyh7XHJcbiAgICAgICAgLi4udmFsdWUsXHJcbiAgICAgICAgcGxhY2VtZW50OiBnZXRQbGFjZW1lbnQodmFsdWUsIG1vZGlmaWVycyksXHJcbiAgICAgIH0pXHJcbiAgICB9IGVsc2Uge1xyXG4gICAgICBjcmVhdGVUb29sdGlwKGVsLCB2YWx1ZSwgbW9kaWZpZXJzKVxyXG4gICAgfVxyXG4gIH0sXHJcbiAgdW5iaW5kIChlbCkge1xyXG4gICAgZGVzdHJveVRvb2x0aXAoZWwpXHJcbiAgfSxcclxufVxyXG5cclxuZXhwb3J0IGRlZmF1bHQgZGlyZWN0aXZlXHJcblxuXG5cbi8vIFdFQlBBQ0sgRk9PVEVSIC8vXG4vLyAuL3NyYy92LXRvb2x0aXAuanMiLCJcbmZ1bmN0aW9uIGNvbnZlcnRUb0FycmF5ICh2YWx1ZSkge1xuICBpZiAodHlwZW9mIHZhbHVlID09PSAnc3RyaW5nJykge1xyXG4gICAgdmFsdWUgPSB2YWx1ZS5zcGxpdCgnICcpXHJcbiAgfVxyXG4gIHJldHVybiB2YWx1ZVxyXG59XHJcblxyXG5leHBvcnQgZnVuY3Rpb24gYWRkQ2xhc3NlcyAoZWwsIGNsYXNzZXMpIHtcclxuICBjbGFzc2VzID0gY29udmVydFRvQXJyYXkoY2xhc3NlcylcclxuICBjbGFzc2VzLmZvckVhY2goYyA9PiB7XHJcbiAgICBlbC5jbGFzc0xpc3QuYWRkKGMpXHJcbiAgfSlcclxufVxyXG5cclxuZXhwb3J0IGZ1bmN0aW9uIHJlbW92ZUNsYXNzZXMgKGVsLCBjbGFzc2VzKSB7XHJcbiAgY2xhc3NlcyA9IGNvbnZlcnRUb0FycmF5KGNsYXNzZXMpXHJcbiAgY2xhc3Nlcy5mb3JFYWNoKGMgPT4ge1xyXG4gICAgZWwuY2xhc3NMaXN0LnJlbW92ZShjKVxyXG4gIH0pXHJcbn1cclxuXHJcbmV4cG9ydCBmdW5jdGlvbiByZXBsYWNlQ2xhc3NlcyAoZWwsIG5ld0NsYXNzZXMsIG9sZENsYXNzZXMpIHtcclxuICByZW1vdmVDbGFzc2VzKGVsLCBvbGRDbGFzc2VzKVxyXG4gIGFkZENsYXNzZXMoZWwsIG5ld0NsYXNzZXMpXHJcbn1cclxuXG5cblxuLy8gV0VCUEFDSyBGT09URVIgLy9cbi8vIC4vc3JjL3V0aWxzLmpzIiwibW9kdWxlLmV4cG9ydHMgPSByZXF1aXJlKFwidG9vbHRpcC5qc1wiKTtcblxuXG4vLy8vLy8vLy8vLy8vLy8vLy9cbi8vIFdFQlBBQ0sgRk9PVEVSXG4vLyBleHRlcm5hbCBcInRvb2x0aXAuanNcIlxuLy8gbW9kdWxlIGlkID0gMlxuLy8gbW9kdWxlIGNodW5rcyA9IDAiLCJpbXBvcnQgdnRvb2x0aXAsIHsgZGVmYXVsdE9wdGlvbnMgfSBmcm9tICcuL3YtdG9vbHRpcCdcclxuXHJcbmV4cG9ydCBmdW5jdGlvbiBpbnN0YWxsIChWdWUsIG9wdGlvbnMpIHtcclxuICBpZiAoaW5zdGFsbC5pbnN0YWxsZWQpIHJldHVyblxyXG4gIGluc3RhbGwuaW5zdGFsbGVkID0gdHJ1ZVxyXG5cclxuICBvcHRpb25zID0gT2JqZWN0LmFzc2lnbih7fSwgZGVmYXVsdE9wdGlvbnMsIG9wdGlvbnMgfHwge30pXHJcbiAgdnRvb2x0aXAub3B0aW9ucyA9IG9wdGlvbnNcclxuICBWdWUuZGlyZWN0aXZlKCd0b29sdGlwJywgdnRvb2x0aXApXHJcbn1cclxuXHJcbmV4cG9ydCBjb25zdCBWVG9vbHRpcCA9IHZ0b29sdGlwXHJcblxyXG5jb25zdCBwbHVnaW4gPSB7XHJcbiAgaW5zdGFsbCxcclxufVxyXG5cclxuLy8gQXV0by1pbnN0YWxsXHJcbmxldCBHbG9iYWxWdWUgPSBudWxsXHJcbmlmICh0eXBlb2Ygd2luZG93ICE9PSAndW5kZWZpbmVkJykge1xyXG4gIEdsb2JhbFZ1ZSA9IHdpbmRvdy5WdWVcclxufSBlbHNlIGlmICh0eXBlb2YgZ2xvYmFsICE9PSAndW5kZWZpbmVkJykge1xyXG4gIEdsb2JhbFZ1ZSA9IGdsb2JhbC5WdWVcclxufVxyXG5pZiAoR2xvYmFsVnVlKSB7XHJcbiAgR2xvYmFsVnVlLnVzZShwbHVnaW4pXHJcbn1cclxuXHJcbmV4cG9ydCBkZWZhdWx0IHBsdWdpblxyXG5cblxuXG4vLyBXRUJQQUNLIEZPT1RFUiAvL1xuLy8gLi9zcmMvaW5kZXguanMiXSwic291cmNlUm9vdCI6IiJ9
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
+
+/***/ }),
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var Vue = __webpack_require__(0);
+var Vue = __webpack_require__(3);
 Vue = 'default' in Vue ? Vue['default'] : Vue;
 
 var version = '2.1.0';
@@ -10538,7 +13959,7 @@ exports.directive = directive;
 exports.mixin = mixin;
 
 /***/ }),
-/* 12 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 !function(e,t){ true?module.exports=t():"function"==typeof define&&define.amd?define([],t):"object"==typeof exports?exports.VueColor=t():e.VueColor=t()}(this,function(){return function(e){function t(r){if(o[r])return o[r].exports;var a=o[r]={exports:{},id:r,loaded:!1};return e[r].call(a.exports,a,a.exports,t),a.loaded=!0,a.exports}var o={};return t.m=e,t.c=o,t.p="",t(0)}([function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}var a=o(37),i=r(a),n=o(38),s=r(n),l=o(41),c=r(l),u=o(42),h=r(u),d=o(39),f=r(d),p=o(40),_=r(p),v=o(36),g=r(v),b=o(6),x=r(b),m=o(8),w=r(m),C=o(4),y=r(C),k=o(5),F=r(k),A=o(7),R=r(A),S=o(3),M=r(S),E={version:"2.0.9",Compact:i.default,Material:s.default,Slider:c.default,Swatches:h.default,Photoshop:f.default,Sketch:_.default,Chrome:g.default,Alpha:x.default,Checkboard:w.default,EditableInput:y.default,Hue:F.default,Saturation:R.default,ColorMixin:M.default};e.exports=E},function(e,t){e.exports=function(){var e=[];return e.toString=function(){for(var e=[],t=0;t<this.length;t++){var o=this[t];o[2]?e.push("@media "+o[2]+"{"+o[1]+"}"):e.push(o[1])}return e.join("")},e.i=function(t,o){"string"==typeof t&&(t=[[null,t,""]]);for(var r={},a=0;a<this.length;a++){var i=this[a][0];"number"==typeof i&&(r[i]=!0)}for(a=0;a<t.length;a++){var n=t[a];"number"==typeof n[0]&&r[n[0]]||(o&&!n[2]?n[2]=o:o&&(n[2]="("+n[2]+") and ("+o+")"),e.push(n))}},e}},function(e,t,o){function r(e,t){for(var o=0;o<e.length;o++){var r=e[o],a=h[r.id];if(a){a.refs++;for(var i=0;i<a.parts.length;i++)a.parts[i](r.parts[i]);for(;i<r.parts.length;i++)a.parts.push(l(r.parts[i],t))}else{for(var n=[],i=0;i<r.parts.length;i++)n.push(l(r.parts[i],t));h[r.id]={id:r.id,refs:1,parts:n}}}}function a(e){for(var t=[],o={},r=0;r<e.length;r++){var a=e[r],i=a[0],n=a[1],s=a[2],l=a[3],c={css:n,media:s,sourceMap:l};o[i]?o[i].parts.push(c):t.push(o[i]={id:i,parts:[c]})}return t}function i(e,t){var o=p(),r=g[g.length-1];if("top"===e.insertAt)r?r.nextSibling?o.insertBefore(t,r.nextSibling):o.appendChild(t):o.insertBefore(t,o.firstChild),g.push(t);else{if("bottom"!==e.insertAt)throw new Error("Invalid value for parameter 'insertAt'. Must be 'top' or 'bottom'.");o.appendChild(t)}}function n(e){e.parentNode.removeChild(e);var t=g.indexOf(e);t>=0&&g.splice(t,1)}function s(e){var t=document.createElement("style");return t.type="text/css",i(e,t),t}function l(e,t){var o,r,a;if(t.singleton){var i=v++;o=_||(_=s(t)),r=c.bind(null,o,i,!1),a=c.bind(null,o,i,!0)}else o=s(t),r=u.bind(null,o),a=function(){n(o)};return r(e),function(t){if(t){if(t.css===e.css&&t.media===e.media&&t.sourceMap===e.sourceMap)return;r(e=t)}else a()}}function c(e,t,o,r){var a=o?"":r.css;if(e.styleSheet)e.styleSheet.cssText=b(t,a);else{var i=document.createTextNode(a),n=e.childNodes;n[t]&&e.removeChild(n[t]),n.length?e.insertBefore(i,n[t]):e.appendChild(i)}}function u(e,t){var o=t.css,r=t.media,a=t.sourceMap;if(r&&e.setAttribute("media",r),a&&(o+="\n/*# sourceURL="+a.sources[0]+" */",o+="\n/*# sourceMappingURL=data:application/json;base64,"+btoa(unescape(encodeURIComponent(JSON.stringify(a))))+" */"),e.styleSheet)e.styleSheet.cssText=o;else{for(;e.firstChild;)e.removeChild(e.firstChild);e.appendChild(document.createTextNode(o))}}var h={},d=function(e){var t;return function(){return"undefined"==typeof t&&(t=e.apply(this,arguments)),t}},f=d(function(){return/msie [6-9]\b/.test(window.navigator.userAgent.toLowerCase())}),p=d(function(){return document.head||document.getElementsByTagName("head")[0]}),_=null,v=0,g=[];e.exports=function(e,t){t=t||{},"undefined"==typeof t.singleton&&(t.singleton=f()),"undefined"==typeof t.insertAt&&(t.insertAt="bottom");var o=a(e);return r(o,t),function(e){for(var i=[],n=0;n<o.length;n++){var s=o[n],l=h[s.id];l.refs--,i.push(l)}if(e){var c=a(e);r(c,t)}for(var n=0;n<i.length;n++){var l=i[n];if(0===l.refs){for(var u=0;u<l.parts.length;u++)l.parts[u]();delete h[l.id]}}}};var b=function(){var e=[];return function(t,o){return e[t]=o,e.filter(Boolean).join("\n")}}()},function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}function a(e,t){var o,r=e&&e.a;o=e&&e.hsl?(0,n.default)(e.hsl):e&&e.hex&&e.hex.length>0?(0,n.default)(e.hex):(0,n.default)(e),o&&o.setAlpha(r||1);var a=o.toHsl(),i=o.toHsv();return 0===a.s&&(a.h=e.h||t||0,i.h=e.h||t||0),{hsl:a,hex:o.toHexString().toUpperCase(),rgba:o.toRgb(),hsv:i,oldHue:e.h||t||a.h,source:e.source,a:e.a||o.getAlpha()}}Object.defineProperty(t,"__esModule",{value:!0});var i=o(35),n=r(i);t.default={props:["value"],data:function(){return{val:a(this.value)}},computed:{colors:{get:function(){return this.val},set:function(e){this.val=e,this.$emit("input",e)}}},watch:{value:function(e){this.val=a(e)}},methods:{colorChange:function(e,t){this.oldHue=this.colors.hsl.h,this.colors=a(e,t||this.oldHue)},isValidHex:function(e){return(0,n.default)(e).isValid()},simpleCheckForValidColor:function(e){for(var t=["r","g","b","a","h","s","a","v"],o=0,r=0,a=0;a<t.length;a++){var i=t[a];e[i]&&(o++,isNaN(e[i])||r++)}if(o===r)return e}}}},function(e,t,o){var r,a;o(56),r=o(18);var i=o(44);a=r=r||{},"object"!=typeof r.default&&"function"!=typeof r.default||(a=r=r.default),"function"==typeof a&&(a=a.options),a.render=i.render,a.staticRenderFns=i.staticRenderFns,e.exports=r},function(e,t,o){var r,a;o(57),r=o(19);var i=o(45);a=r=r||{},"object"!=typeof r.default&&"function"!=typeof r.default||(a=r=r.default),"function"==typeof a&&(a=a.options),a.render=i.render,a.staticRenderFns=i.staticRenderFns,e.exports=r},function(e,t,o){var r,a;o(65),r=o(16);var i=o(53);a=r=r||{},"object"!=typeof r.default&&"function"!=typeof r.default||(a=r=r.default),"function"==typeof a&&(a=a.options),a.render=i.render,a.staticRenderFns=i.staticRenderFns,e.exports=r},function(e,t,o){var r,a;o(58),r=o(20);var i=o(46);a=r=r||{},"object"!=typeof r.default&&"function"!=typeof r.default||(a=r=r.default),"function"==typeof a&&(a=a.options),a.render=i.render,a.staticRenderFns=i.staticRenderFns,e.exports=r},function(e,t,o){var r,a;o(66),r=o(17);var i=o(54);a=r=r||{},"object"!=typeof r.default&&"function"!=typeof r.default||(a=r=r.default),"function"==typeof a&&(a=a.options),a.render=i.render,a.staticRenderFns=i.staticRenderFns,e.exports=r},function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(t,"__esModule",{value:!0});var a=o(3),i=r(a),n=o(4),s=r(n),l=o(7),c=r(l),u=o(5),h=r(u),d=o(6),f=r(d);t.default={name:"Chrome",mixins:[i.default],props:{},components:{saturation:c.default,hue:h.default,alpha:f.default,"ed-in":s.default},data:function(){return{fields:["hex","rgba","hsla"],fieldsIndex:0,highlight:!1}},computed:{activeColor:function(){var e=this.colors.rgba;return"rgba("+[e.r,e.g,e.b,e.a].join(",")+")"}},methods:{handlePreset:function(e){this.colorChange({hex:e,source:"hex"})},childChange:function(e){this.colorChange(e)},inputChange:function(e){e&&(e.hex?this.isValidHex(e.hex)&&this.colorChange({hex:e.hex,source:"hex"}):(e.r||e.g||e.b||e.a)&&this.colorChange({r:e.r||this.colors.rgba.r,g:e.g||this.colors.rgba.g,b:e.b||this.colors.rgba.b,a:e.a||this.colors.rgba.a,source:"rgba"}))},toggleViews:function(){return this.fieldsIndex>=2?void(this.fieldsIndex=0):void this.fieldsIndex++},showHighlight:function(){this.highlight=!0},hideHighlight:function(){this.highlight=!1}}}},function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(t,"__esModule",{value:!0});var a=o(3),i=r(a),n=o(4),s=r(n),l=["#4D4D4D","#999999","#FFFFFF","#F44E3B","#FE9200","#FCDC00","#DBDF00","#A4DD00","#68CCCA","#73D8FF","#AEA1FF","#FDA1FF","#333333","#808080","#CCCCCC","#D33115","#E27300","#FCC400","#B0BC00","#68BC00","#16A5A5","#009CE0","#7B64FF","#FA28FF","#000000","#666666","#B3B3B3","#9F0500","#C45100","#FB9E00","#808900","#194D33","#0C797D","#0062B1","#653294","#AB149E"];t.default={name:"Compact",mixins:[i.default],props:{},components:{"ed-in":s.default},computed:{pick:function(){return this.colors.hex}},data:function(){return{defaultColors:l}},methods:{handlerClick:function(e){this.colorChange({hex:e,source:"hex"})},onChange:function(e){e&&(e.hex?this.isValidHex(e.hex)&&this.colorChange({hex:e.hex,source:"hex"}):(e.r||e.g||e.b)&&this.colorChange({r:e.r||this.colors.rgba.r,g:e.g||this.colors.rgba.g,b:e.b||this.colors.rgba.b,a:e.a||this.colors.rgba.a,source:"rgba"}))}}}},function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(t,"__esModule",{value:!0});var a=o(4),i=r(a),n=o(3),s=r(n);t.default={name:"Material",mixins:[s.default],components:{"ed-in":i.default},methods:{onChange:function(e){e&&(e.hex?this.isValidHex(e.hex)&&this.colorChange({hex:e.hex,source:"hex"}):(e.r||e.g||e.b)&&this.colorChange({r:e.r||this.colors.rgba.r,g:e.g||this.colors.rgba.g,b:e.b||this.colors.rgba.b,a:e.a||this.colors.rgba.a,source:"rgba"}))}}}},function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(t,"__esModule",{value:!0});var a=o(3),i=r(a),n=o(4),s=r(n),l=o(7),c=r(l),u=o(5),h=r(u),d=o(6),f=r(d);t.default={name:"Photoshop",mixins:[i.default],props:{head:{type:String,default:"Color Picker"}},components:{saturation:c.default,hue:h.default,alpha:f.default,"ed-in":s.default},data:function(){return{currentColor:"#FFF"}},created:function(){this.currentColor=this.colors.hex},methods:{childChange:function(e){this.colorChange(e)},inputChange:function(e){e&&(e["#"]?this.isValidHex(e["#"])&&this.colorChange({hex:e["#"],source:"hex"}):(e.r||e.g||e.b||e.a)&&this.colorChange({r:e.r||this.colors.rgba.r,g:e.g||this.colors.rgba.g,b:e.b||this.colors.rgba.b,a:e.a||this.colors.rgba.a,source:"rgba"}))},handleAccept:function(){this.$emit("ok")},handleCancel:function(){this.$emit("cancel")}}}},function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(t,"__esModule",{value:!0});var a=o(3),i=r(a),n=o(4),s=r(n),l=o(7),c=r(l),u=o(5),h=r(u),d=o(6),f=r(d),p=["#D0021B","#F5A623","#F8E71C","#8B572A","#7ED321","#417505","#BD10E0","#9013FE","#4A90E2","#50E3C2","#B8E986","#000000","#4A4A4A","#9B9B9B","#FFFFFF"];t.default={name:"Sketch",mixins:[i.default],components:{saturation:c.default,hue:h.default,alpha:f.default,"ed-in":s.default},data:function(){return{presetColors:p}},computed:{activeColor:function(){var e=this.colors.rgba;return"rgba("+[e.r,e.g,e.b,e.a].join(",")+")"}},methods:{handlePreset:function(e){this.colorChange({hex:e,source:"hex"})},childChange:function(e){this.colorChange(e)},inputChange:function(e){e&&(e.hex?this.isValidHex(e.hex)&&this.colorChange({hex:e.hex,source:"hex"}):(e.r||e.g||e.b||e.a)&&this.colorChange({r:e.r||this.colors.rgba.r,g:e.g||this.colors.rgba.g,b:e.b||this.colors.rgba.b,a:e.a||this.colors.rgba.a,source:"rgba"}))}}}},function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(t,"__esModule",{value:!0});var a=o(3),i=r(a),n=o(5),s=r(n);t.default={name:"Slider",mixins:[i.default],props:{direction:String},components:{hue:s.default},computed:{activeOffset:function(){return Math.round(100*this.colors.hsl.s)/100===.5?Math.round(100*this.colors.hsl.l)/100:0}},data:function(){return{swatches:[".80",".65",".50",".35",".20"]}},methods:{hueChange:function(e){this.colorChange(e)},handleSwClick:function(e,t){this.colorChange({h:this.colors.hsl.h,s:.5,l:t,source:"hsl"})}}}},function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(t,"__esModule",{value:!0});var a=o(34),i=r(a),n=o(3),s=r(n),l=["red","pink","purple","deepPurple","indigo","blue","lightBlue","cyan","teal","green","lightGreen","lime","yellow","amber","orange","deepOrange","brown","blueGrey"],c=["900","700","500","300","100"],u=function(){var e=[];return l.forEach(function(t){var o=[];c.forEach(function(e){o.push(i.default[t][e].toUpperCase())}),e.push(o)}),e}();t.default={name:"Swatches",mixins:[s.default],computed:{pick:function(){return this.colors.hex}},data:function(){return{defaultColors:u}},methods:{handlerClick:function(e){this.colorChange({hex:e,source:"hex"})}}}},function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(t,"__esModule",{value:!0});var a=o(8),i=r(a);t.default={name:"Alpha",props:{value:Object,onChange:Function},components:{checkboard:i.default},computed:{colors:function(){return this.value},gradientColor:function(){var e=this.colors.rgba,t=[e.r,e.g,e.b].join(",");return"linear-gradient(to right, rgba("+t+", 0) 0%, rgba("+t+", 1) 100%)"}},methods:{handleChange:function(e,t){!t&&e.preventDefault();var o,r=this.$refs.container,a=r.clientWidth,i=r.getBoundingClientRect().left+window.pageXOffset,n=e.pageX||(e.touches?e.touches[0].pageX:0),s=n-i;o=s<0?0:s>a?1:Math.round(100*s/a)/100,this.colors.a!==o&&this.$emit("change",{h:this.colors.hsl.h,s:this.colors.hsl.s,l:this.colors.hsl.l,a:o,source:"rgba"})},handleMouseDown:function(e){this.handleChange(e,!0),window.addEventListener("mousemove",this.handleChange),window.addEventListener("mouseup",this.handleMouseUp)},handleMouseUp:function(){this.unbindEventListeners()},unbindEventListeners:function(){window.removeEventListener("mousemove",this.handleChange),window.removeEventListener("mouseup",this.handleMouseUp)}}}},function(e,t){"use strict";function o(e,t,o){if("undefined"==typeof document)return null;var r=document.createElement("canvas");r.width=r.height=2*o;var a=r.getContext("2d");return a?(a.fillStyle=e,a.fillRect(0,0,r.width,r.height),a.fillStyle=t,a.fillRect(0,0,o,o),a.translate(o,o),a.fillRect(0,0,o,o),r.toDataURL()):null}function r(e,t,r){var i=e+","+t+","+r;if(a[i])return a[i];var n=o(e,t,r);return a[i]=n,n}Object.defineProperty(t,"__esModule",{value:!0});var a={};t.default={name:"Checkboard",props:{size:{type:[Number,String],default:8},white:{type:String,default:"#fff"},grey:{type:String,default:"#e6e6e6"}},computed:{bgStyle:function(){return"url("+r(this.white,this.grey,this.size)+") center left"}}}},function(e,t){"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.default={name:"editableInput",props:{label:String,value:[String,Number],max:Number,arrowOffset:{type:Number,default:1}},computed:{val:function(){return this.value}},filters:{maxFilter:{read:function(e){return this.max&&e>this.max?this.max:e},write:function(e,t){return e}}},methods:{update:function(e){this.handleChange(e.target.value)},handleChange:function(e){var t={};t[this.label]=e,this.$emit("change",t)},handleBlur:function(e){console.log(e)},handleKeyDown:function(e){var t=this.val,o=Number(t);if(o){var r=this.arrowOffset||1;38===e.keyCode&&(t=o+r,this.handleChange(t),e.preventDefault()),40===e.keyCode&&(t=o-r,this.handleChange(t),e.preventDefault())}},handleDrag:function(e){console.log(e)},handleMouseDown:function(e){console.log(e)}}}},function(e,t){"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.default={name:"Hue",props:{value:Object,direction:{type:String,default:"horizontal"}},computed:{colors:function(){return this.value},directionClass:function(){return{"vue-color__c-hue--horizontal":"horizontal"===this.direction,"vue-color__c-hue--vertical":"vertical"===this.direction}},pointerTop:function(){return"vertical"===this.direction?-(100*this.colors.hsl.h/360)+100+"%":0},pointerLeft:function(){return"vertical"===this.direction?0:100*this.colors.hsl.h/360+"%"}},methods:{handleChange:function(e,t){!t&&e.preventDefault();var o,r,a=this.$refs.container,i=a.clientWidth,n=a.clientHeight,s=a.getBoundingClientRect().left+window.pageXOffset,l=a.getBoundingClientRect().top+window.pageYOffset,c=e.pageX||(e.touches?e.touches[0].pageX:0),u=e.pageY||(e.touches?e.touches[0].pageY:0),h=c-s,d=u-l;"vertical"===this.direction?(d<0?o=359:d>n?o=0:(r=-(100*d/n)+100,o=360*r/100),this.colors.hsl.h!==o&&this.$emit("change",{h:o,s:this.colors.hsl.s,l:this.colors.hsl.l,a:this.colors.hsl.a,source:"hsl"})):(h<0?o=0:h>i?o=359:(r=100*h/i,o=360*r/100),this.colors.hsl.h!==o&&this.$emit("change",{h:o,s:this.colors.hsl.s,l:this.colors.hsl.l,a:this.colors.hsl.a,source:"hsl"}))},handleMouseDown:function(e){this.handleChange(e,!0),window.addEventListener("mousemove",this.handleChange),window.addEventListener("mouseup",this.handleMouseUp)},handleMouseUp:function(e){this.unbindEventListeners()},unbindEventListeners:function(){window.removeEventListener("mousemove",this.handleChange),window.removeEventListener("mouseup",this.handleMouseUp)}}}},function(e,t,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(t,"__esModule",{value:!0});var a=o(33),i=r(a);t.default={name:"Saturation",props:{value:Object},computed:{colors:function(){return this.value},bgColor:function(){return"hsl("+this.colors.hsl.h+", 100%, 50%)"},pointerTop:function(){return-(100*this.colors.hsv.v)+100+"%"},pointerLeft:function(){return 100*this.colors.hsv.s+"%"}},methods:{throttle:(0,i.default)(function(e,t){e(t)},20,{leading:!0,trailing:!1}),handleChange:function(e,t){!t&&e.preventDefault();var o=this.$refs.container,r=o.clientWidth,a=o.clientHeight,i=o.getBoundingClientRect().left+window.pageXOffset,n=o.getBoundingClientRect().top+window.pageYOffset,s=e.pageX||(e.touches?e.touches[0].pageX:0),l=e.pageY||(e.touches?e.touches[0].pageY:0),c=s-i,u=l-n;c<0?c=0:c>r?c=r:u<0?u=0:u>a&&(u=a);var h=100*c/r,d=-(100*u/a)+100;this.throttle(this.onChange,{h:this.colors.hsl.h,s:h,v:d>0?d:.01,a:this.colors.hsl.a,source:"hsva"})},onChange:function(e){this.$emit("change",e)},handleMouseDown:function(e){window.addEventListener("mousemove",this.handleChange),window.addEventListener("mouseup",this.handleChange),window.addEventListener("mouseup",this.handleMouseUp)},handleMouseUp:function(e){this.unbindEventListeners()},unbindEventListeners:function(){window.removeEventListener("mousemove",this.handleChange),window.removeEventListener("mouseup",this.handleChange),window.removeEventListener("mouseup",this.handleMouseUp)}}}},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__compact{padding-top:5px;padding-left:5px;width:240px;border-radius:2px;box-shadow:0 2px 10px rgba(0,0,0,.12),0 2px 5px rgba(0,0,0,.16);background-color:#fff}.vue-color__compact__colors{overflow:hidden;padding:0;margin:0}.vue-color__compact__color-item{list-style:none;width:15px;height:15px;float:left;margin-right:5px;margin-bottom:5px;position:relative;cursor:pointer}.vue-color__compact__color-item--white{box-shadow:inset 0 0 0 1px #ddd}.vue-color__compact__color-item--white .vue-color__compact__dot{background:#000}.vue-color__compact__dot{position:absolute;top:5px;right:5px;bottom:5px;left:5px;border-radius:50%;opacity:1;background:#fff}.vue-color__compact__fields{display:flex;padding-bottom:6px;padding-right:5px;position:relative}.vue-color__compact__fields .vue-color__editable-input__input{width:70%;padding-left:30%;background:none;font-size:12px;color:#333;height:16px}.vue-color__compact__fields .vue-color__editable-input__label{position:absolute;top:3px;left:0;line-height:16px;text-transform:uppercase;font-size:12px;color:#999}.vue-color__compact__pick-color{position:absolute;top:6px;left:5px;height:9px;width:9px}.vue-color__compact__col-3{flex:1}.vue_color__compact__col-hex{flex:2}.vue_color__compact__col-hex .vue-color__editable-input__input{width:80%;padding-left:20%}.vue_color__compact__col-hex .vue-color__editable-input__label{display:none}",""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__editable-input{position:relative}.vue-color__editable-input__input{padding:0;border:0;outline:none}.vue-color__editable-input__label{text-transform:capitalize}",""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__c-hue{position:absolute;top:0;right:0;bottom:0;left:0;border-radius:2px}.vue-color__c-hue--horizontal{background:linear-gradient(90deg,red 0,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,red)}.vue-color__c-hue--vertical{background:linear-gradient(0deg,red 0,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,red)}.vue-color__c-hue__container{cursor:pointer;margin:0 2px;position:relative;height:100%}.vue-color__c-hue__pointer{z-index:2;position:absolute}.vue-color__c-hue__picker{cursor:pointer;margin-top:1px;width:4px;border-radius:1px;height:8px;box-shadow:0 0 2px rgba(0,0,0,.6);background:#fff;transform:translateX(-2px)}",""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__saturation,.vue-color__saturation--black,.vue-color__saturation--white{cursor:pointer;position:absolute;top:0;left:0;right:0;bottom:0}.vue-color__saturation--white{background:linear-gradient(90deg,#fff,hsla(0,0%,100%,0))}.vue-color__saturation--black{background:linear-gradient(0deg,#000,transparent)}.vue-color__saturation--pointer{cursor:pointer;position:absolute}.vue-color__saturation--circle{cursor:head;width:4px;height:4px;box-shadow:0 0 0 1.5px #fff,inset 0 0 1px 1px rgba(0,0,0,.3),0 0 1px 2px rgba(0,0,0,.4);border-radius:50%;transform:translate(-2px,-2px)}",""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__material{width:98px;height:98px;padding:16px;font-family:Roboto;position:relative;border-radius:2px;box-shadow:0 2px 10px rgba(0,0,0,.12),0 2px 5px rgba(0,0,0,.16);background-color:#fff}.vue-color__material .vue-color__editable-input__input{width:100%;margin-top:12px;font-size:15px;color:#333;height:30px}.vue-color__material .vue-color__editable-input__label{position:absolute;top:0;left:0;font-size:11px;color:#999;text-transform:capitalize}.vue-color__material__hex{border-bottom-width:2px;border-bottom-style:solid}.vue-color__material__split{display:flex;margin-right:-10px;padding-top:11px}.vue-color__material__third{flex:1;padding-right:10px}",""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__slider{position:relative;width:410px}.vue-color__slider__hue-warp{height:12px;position:relative}.vue-color__slider__hue-warp .vue-color__c-hue__picker{width:14px;height:14px;border-radius:6px;transform:translate(-7px,-2px);background-color:#f8f8f8;box-shadow:0 1px 4px 0 rgba(0,0,0,.37)}.vue-color__slider__swatches{display:flex;margin-top:20px}.vue-color__slider__swatch{margin-right:1px;flex:1;width:20%}.vue-color__slider__swatch:first-child{margin-right:1px}.vue-color__slider__swatch:first-child .vue-color__slider__swatch-picker{border-radius:2px 0 0 2px}.vue-color__slider__swatch:last-child{margin-right:0}.vue-color__slider__swatch:last-child .vue-color__slider__swatch-picker{border-radius:0 2px 2px 0}.vue-color__slider__swatch-picker{cursor:pointer;height:12px}.vue-color__slider__swatch-picker--active{transform:scaleY(1.8);border-radius:3.6px/2px}",""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__swatches{width:320px;height:240px;overflow-y:scroll;background-color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.12),0 2px 5px rgba(0,0,0,.16)}.vue-color__swatches__box{padding:16px 0 6px 16px;overflow:hidden}.vue-color__swatches__color-group{padding-bottom:10px;width:40px;float:left;margin-right:10px}.vue-color__swatches__color-it{width:40px;height:24px;cursor:pointer;background:#880e4f;margin-bottom:1px;overflow:hidden;border-radius:2px 2px 0 0}.vue-color__swatches__pick{fill:#fff;margin-left:8px;display:block}",""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,'.vue-color__photoshop{background:#dcdcdc;border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.25),0 8px 16px rgba(0,0,0,.15);box-sizing:initial;width:513px;font-family:Roboto}.vue-color__photoshop__head{background-image:linear-gradient(-180deg,#f0f0f0,#d4d4d4);border-bottom:1px solid #b1b1b1;box-shadow:inset 0 1px 0 0 hsla(0,0%,100%,.2),inset 0 -1px 0 0 rgba(0,0,0,.02);height:23px;line-height:24px;border-radius:4px 4px 0 0;font-size:13px;color:#4d4d4d;text-align:center}.vue-color__photoshop__body{padding:15px;display:flex}.vue-color__photoshop__saturation-wrap{width:256px;height:256px;position:relative;border:2px solid #b3b3b3;border-bottom:2px solid #f0f0f0;overflow:hidden}.vue-color__photoshop__saturation-wrap .vue-color__saturation--circle{width:12px;height:12px}.vue-color__photoshop__hue-wrap{position:relative;height:256px;width:19px;margin-left:10px;border:2px solid #b3b3b3;border-bottom:2px solid #f0f0f0}.vue-color__photoshop__hue-pointer{position:relative}.vue-color__photoshop__hue-pointer--left,.vue-color__photoshop__hue-pointer--right{position:absolute;width:0;height:0;border-style:solid;border-width:5px 0 5px 8px;border-color:transparent transparent transparent #555}.vue-color__photoshop__hue-pointer--left:after,.vue-color__photoshop__hue-pointer--right:after{content:"";width:0;height:0;border-style:solid;border-width:4px 0 4px 6px;border-color:transparent transparent transparent #fff;position:absolute;top:1px;left:1px;transform:translate(-8px,-5px)}.vue-color__photoshop__hue-pointer--left{transform:translate(-13px,-4px)}.vue-color__photoshop__hue-pointer--right{transform:translate(20px,-4px) rotate(180deg)}.vue-color__photoshop__controls{width:180px;margin-left:10px;display:flex}.vue-color__photoshop__actions{margin-left:20px;flex:1}.vue-color__photoshop__ac-btn{cursor:pointer;background-image:linear-gradient(-180deg,#fff,#e6e6e6);border:1px solid #878787;border-radius:2px;height:20px;box-shadow:0 1px 0 0 #eaeaea;font-size:14px;color:#000;line-height:20px;text-align:center;margin-bottom:10px}.vue-color__photoshop__previews{width:60px}.vue-color__photoshop__previews__swatches{border:1px solid #b3b3b3;border-bottom:1px solid #f0f0f0;margin-bottom:2px;margin-top:1px}.vue-color__photoshop__previews__pr-color{height:34px;box-shadow:inset 1px 0 0 #000,inset -1px 0 0 #000,inset 0 1px 0 #000}.vue-color__photoshop__previews__label{font-size:14px;color:#000;text-align:center}.vue-color__photoshop__fields{padding-top:5px;padding-bottom:9px;width:80px;position:relative}.vue-color__photoshop__fields .vue-color__editable-input__input{margin-left:40%;width:40%;height:18px;border:1px solid #888;box-shadow:inset 0 1px 1px rgba(0,0,0,.1),0 1px 0 0 #ececec;margin-bottom:5px;font-size:13px;padding-left:3px;margin-right:10px}.vue-color__photoshop__fields .vue-color__editable-input__label{top:0;left:0;width:34px;text-transform:uppercase;font-size:13px;height:18px;line-height:22px;position:absolute}.vue-color__photoshop__fields__divider{height:5px}.vue-color__photoshop__fields__hex .vue-color__editable-input__input{margin-left:20%;width:80%;height:18px;border:1px solid #888;box-shadow:inset 0 1px 1px rgba(0,0,0,.1),0 1px 0 0 #ececec;margin-bottom:6px;font-size:13px;padding-left:3px}.vue-color__photoshop__fields__hex .vue-color__editable-input__label{position:absolute;top:0;left:0;width:14px;text-transform:uppercase;font-size:13px;height:18px;line-height:22px}',""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__sketch{position:relative;width:200px;padding:10px 10px 0;box-sizing:initial;background:#fff;border-radius:4px;box-shadow:0 0 0 1px rgba(0,0,0,.15),0 8px 16px rgba(0,0,0,.15)}.vue-color__sketch__saturation-wrap{width:100%;padding-bottom:75%;position:relative;overflow:hidden}.vue-color__sketch__controls{display:flex}.vue-color__sketch__sliders{padding:4px 0;flex:1}.vue-color__sketch__sliders .vue-color__c-alpha__gradient,.vue-color__sketch__sliders .vue-color__c-hue{border-radius:2px}.vue-color__sketch__hue-wrap{position:relative;height:10px}.vue-color__sketch__alpha-wrap{position:relative;height:10px;margin-top:4px;overflow:hidden}.vue-color__sketch__color-wrap{width:24px;height:24px;position:relative;margin-top:4px;margin-left:4px;border-radius:3px}.vue-color__sketch__active-color{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15),inset 0 0 4px rgba(0,0,0,.25);z-index:2}.vue-color__sketch__field{display:flex;padding-top:4px}.vue-color__sketch__field .vue-color__editable-input__input{width:80%;padding:4px 10% 3px;border:none;box-shadow:inset 0 0 0 1px #ccc;font-size:11px}.vue-color__sketch__field .vue-color__editable-input__label{display:block;text-align:center;font-size:11px;color:#222;padding-top:3px;padding-bottom:4px;text-transform:capitalize}.vue-color__sketch__field--single{flex:1;padding-left:6px}.vue-color__sketch__field--double{flex:2}.vue-color__sketch__presets{margin-right:-10px;margin-left:-10px;padding-left:10px;padding-top:10px;border-top:1px solid #eee}.vue-color__sketch__presets-color{border-radius:3px;overflow:hidden;position:relative;display:inline-block;margin:0 10px 10px 0;vertical-align:top;cursor:pointer;width:16px;height:16px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}",""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__chrome{background:#fff;border-radius:2px;box-shadow:0 0 2px rgba(0,0,0,.3),0 4px 8px rgba(0,0,0,.3);box-sizing:initial;width:225px;font-family:Menlo;background-color:#fff}.vue-color__chrome__controls{display:flex}.vue-color__chrome__color-wrap{width:32px}.vue-color__chrome__active-color{margin-top:6px;width:16px;height:16px;border-radius:8px;position:relative;overflow:hidden}.vue-color__chrome__sliders{flex:1}.vue-color__chrome__sliders .vue-color__c-alpha__gradient,.vue-color__chrome__sliders .vue-color__c-hue{border-radius:2px}.vue-color__chrome__sliders .vue-color__c-alpha__picker,.vue-color__chrome__sliders .vue-color__c-hue__picker{width:12px;height:12px;border-radius:6px;transform:translate(-6px,-2px);background-color:#f8f8f8;box-shadow:0 1px 4px 0 rgba(0,0,0,.37)}.vue-color__chrome__fields-wrap{padding-top:16px;display:flex}.vue-color__chrome__fields{display:flex;margin-left:-6px;flex:1}.vue-color__chrome__field{padding-left:6px;width:100%}.vue-color__chrome__toggle-btn{width:32px;text-align:right;position:relative}.vue-color__chrome__icon{margin-right:-4px;margin-top:12px;cursor:pointer;position:relative;z-index:2}.vue-color__chrome__icon-highlight{position:absolute;width:24px;height:28px;background:#eee;border-radius:4px;top:10px;left:12px}.vue-color__chrome__hue-wrap{margin-bottom:8px}.vue-color__chrome__alpha-wrap,.vue-color__chrome__hue-wrap{position:relative;height:10px}.vue-color__chrome__chrome-body{padding:16px 16px 12px;background-color:#fff}.vue-color__chrome__saturation-wrap{width:100%;padding-bottom:55%;position:relative;border-radius:2px 2px 0 0;overflow:hidden}.vue-color__chrome__saturation-wrap .vue-color__saturation--circle{width:12px;height:12px}.vue-color__chrome__fields .vue-color__editable-input__input{font-size:11px;color:#333;width:100%;border-rradius:2px;border:none;box-shadow:inset 0 0 0 1px #dadada;height:21px;text-align:center}.vue-color__chrome__fields .vue-color__editable-input__label{text-transform:uppercase;font-size:11px;line-height:11px;color:#969696;text-align:center;display:block;margin-top:12px}",""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__c-alpha,.vue-color__c-alpha__checkboard-wrap{position:absolute;top:0;right:0;bottom:0;left:0}.vue-color__c-alpha__checkboard-wrap{overflow:hidden}.vue-color__c-alpha__gradient{position:absolute;top:0;right:0;bottom:0;left:0}.vue-color__c-alpha__container{cursor:pointer;position:relative;z-index:2;height:100%;margin:0 3px}.vue-color__c-alpha__pointer{z-index:2;position:absolute}.vue-color__c-alpha__picker{cursor:pointer;width:4px;border-radius:1px;height:8px;box-shadow:0 0 2px rgba(0,0,0,.6);background:#fff;margin-top:1px;transform:translateX(-2px)}",""])},function(e,t,o){t=e.exports=o(1)(),t.push([e.id,".vue-color__c-checkerboard{position:absolute;top:0;right:0;bottom:0;left:0}",""])},function(e,t){(function(t){function o(e,t,o){function r(t){var o=_,r=v;return _=v=void 0,k=t,b=e.apply(r,o)}function i(e){return k=e,x=setTimeout(u,t),F?r(e):b}function n(e){var o=e-m,r=e-k,a=t-o;return A?C(a,g-r):a}function c(e){var o=e-m,r=e-k;return void 0===m||o>=t||o<0||A&&r>=g}function u(){var e=y();return c(e)?h(e):void(x=setTimeout(u,n(e)))}function h(e){return x=void 0,R&&_?r(e):(_=v=void 0,b)}function d(){void 0!==x&&clearTimeout(x),k=0,_=m=v=x=void 0}function f(){return void 0===x?b:h(y())}function p(){var e=y(),o=c(e);if(_=arguments,v=this,m=e,o){if(void 0===x)return i(m);if(A)return x=setTimeout(u,t),r(m)}return void 0===x&&(x=setTimeout(u,t)),
@@ -10546,18 +13967,19 @@ b}var _,v,g,b,x,m,k=0,F=!1,A=!1,R=!0;if("function"!=typeof e)throw new TypeError
 staticClass:"vue-color__sketch__presets"},e._l(e.presetColors,function(t){return o("div",{staticClass:"vue-color__sketch__presets-color",style:{background:t},on:{click:function(o){e.handlePreset(t)}}})}))])},staticRenderFns:[]}},function(e,t){e.exports={render:function(){var e=this,t=e.$createElement,o=e._self._c||t;return o("div",{staticClass:"vue-color__chrome"},[o("div",{staticClass:"vue-color__chrome__saturation-wrap"},[o("saturation",{on:{change:e.childChange},model:{value:e.colors,callback:function(t){e.colors=t},expression:"colors"}})],1),e._v(" "),o("div",{staticClass:"vue-color__chrome__chrome-body"},[o("div",{staticClass:"vue-color__chrome__controls"},[o("div",{staticClass:"vue-color__chrome__color-wrap"},[o("div",{staticClass:"vue-color__chrome__active-color",style:{background:e.activeColor}})]),e._v(" "),o("div",{staticClass:"vue-color__chrome__sliders"},[o("div",{staticClass:"vue-color__chrome__hue-wrap"},[o("hue",{on:{change:e.childChange},model:{value:e.colors,callback:function(t){e.colors=t},expression:"colors"}})],1),e._v(" "),o("div",{staticClass:"vue-color__chrome__alpha-wrap"},[o("alpha",{on:{change:e.childChange},model:{value:e.colors,callback:function(t){e.colors=t},expression:"colors"}})],1)])]),e._v(" "),o("div",{staticClass:"vue-color__chrome__fields-wrap"},[o("div",{directives:[{name:"show",rawName:"v-show",value:0===e.fieldsIndex,expression:"fieldsIndex === 0"}],staticClass:"vue-color__chrome__fields"},[o("div",{staticClass:"vue-color__chrome__field"},[o("ed-in",{attrs:{label:"hex"},on:{change:e.inputChange},model:{value:e.colors.hex,callback:function(t){e.colors.hex=t},expression:"colors.hex"}})],1)]),e._v(" "),o("div",{directives:[{name:"show",rawName:"v-show",value:1===e.fieldsIndex,expression:"fieldsIndex === 1"}],staticClass:"vue-color__chrome__fields"},[o("div",{staticClass:"vue-color__chrome__field"},[o("ed-in",{attrs:{label:"r"},on:{change:e.inputChange},model:{value:e.colors.rgba.r,callback:function(t){e.colors.rgba.r=t},expression:"colors.rgba.r"}})],1),e._v(" "),o("div",{staticClass:"vue-color__chrome__field"},[o("ed-in",{attrs:{label:"g"},on:{change:e.inputChange},model:{value:e.colors.rgba.g,callback:function(t){e.colors.rgba.g=t},expression:"colors.rgba.g"}})],1),e._v(" "),o("div",{staticClass:"vue-color__chrome__field"},[o("ed-in",{attrs:{label:"b"},on:{change:e.inputChange},model:{value:e.colors.rgba.b,callback:function(t){e.colors.rgba.b=t},expression:"colors.rgba.b"}})],1),e._v(" "),o("div",{staticClass:"vue-color__chrome__field"},[o("ed-in",{attrs:{label:"a","arrow-offset":.01,max:1},on:{change:e.inputChange},model:{value:e.colors.a,callback:function(t){e.colors.a=t},expression:"colors.a"}})],1)]),e._v(" "),o("div",{directives:[{name:"show",rawName:"v-show",value:2===e.fieldsIndex,expression:"fieldsIndex === 2"}],staticClass:"vue-color__chrome__fields"},[o("div",{staticClass:"vue-color__chrome__field"},[o("ed-in",{attrs:{label:"h"},on:{change:e.inputChange},model:{value:e.colors.hsl.h,callback:function(t){e.colors.hsl.h=t},expression:"colors.hsl.h"}})],1),e._v(" "),o("div",{staticClass:"vue-color__chrome__field"},[o("ed-in",{attrs:{label:"s"},on:{change:e.inputChange},model:{value:e.colors.hsl.s,callback:function(t){e.colors.hsl.s=t},expression:"colors.hsl.s"}})],1),e._v(" "),o("div",{staticClass:"vue-color__chrome__field"},[o("ed-in",{attrs:{label:"l"},on:{change:e.inputChange},model:{value:e.colors.hsl.l,callback:function(t){e.colors.hsl.l=t},expression:"colors.hsl.l"}})],1),e._v(" "),o("div",{staticClass:"vue-color__chrome__field"},[o("ed-in",{attrs:{label:"a","arrow-offset":.01,max:1},on:{change:e.inputChange},model:{value:e.colors.a,callback:function(t){e.colors.a=t},expression:"colors.a"}})],1)]),e._v(" "),o("div",{staticClass:"vue-color__chrome__toggle-btn",on:{click:e.toggleViews}},[o("div",{staticClass:"vue-color__chrome__icon"},[o("svg",{staticStyle:{width:"24px",height:"24px"},attrs:{viewBox:"0 0 24 24"},on:{mouseover:e.showHighlight,mouseenter:e.showHighlight,mouseout:e.hideHighlight}},[o("path",{attrs:{fill:"#333",d:"M12,18.17L8.83,15L7.42,16.41L12,21L16.59,16.41L15.17,15M12,5.83L15.17,9L16.58,7.59L12,3L7.41,7.59L8.83,9L12,5.83Z"}})])]),e._v(" "),o("div",{directives:[{name:"show",rawName:"v-show",value:e.highlight,expression:"highlight"}],staticClass:"vue-color__chrome__icon-highlight"})])])])])},staticRenderFns:[]}},function(e,t){e.exports={render:function(){var e=this,t=e.$createElement,o=e._self._c||t;return o("div",{staticClass:"vue-color__c-alpha"},[o("div",{staticClass:"vue-color__c-alpha__checkboard-wrap"},[o("checkboard")],1),e._v(" "),o("div",{staticClass:"vue-color__c-alpha__gradient",style:{background:e.gradientColor}}),e._v(" "),o("div",{ref:"container",staticClass:"vue-color__c-alpha__container",on:{mousedown:e.handleMouseDown,touchmove:e.handleChange,touchstart:e.handleChange}},[o("div",{staticClass:"vue-color__c-alpha__pointer",style:{left:100*e.colors.a+"%"}},[o("div",{staticClass:"vue-color__c-alpha__picker"})])])])},staticRenderFns:[]}},function(e,t){e.exports={render:function(){var e=this,t=e.$createElement,o=e._self._c||t;return o("div",{staticClass:"vue-color__c-checkerboard",style:{background:e.bgStyle}})},staticRenderFns:[]}},function(e,t,o){var r=o(21);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(22);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(23);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(24);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(25);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(26);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(27);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(28);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(29);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(30);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(31);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)},function(e,t,o){var r=o(32);"string"==typeof r&&(r=[[e.id,r,""]]);o(2)(r,{});r.locals&&(e.exports=r.locals)}])});
 
 /***/ }),
-/* 13 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(17)
+__webpack_require__(22)
+__webpack_require__(23)
 
-var Component = __webpack_require__(2)(
+var Component = __webpack_require__(4)(
   /* script */
-  __webpack_require__(7),
+  __webpack_require__(8),
   /* template */
-  __webpack_require__(14),
+  __webpack_require__(19),
   /* scopeId */
   "data-v-1073f3cf",
   /* cssModules */
@@ -10568,7 +13990,7 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 14 */
+/* 19 */
 /***/ (function(module, exports) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10606,8 +14028,22 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       expression: "toggle"
     }],
     staticClass: "fab-list"
-  }, _vm._l((_vm.actions), function(action) {
-    return _c('li', {
+  }, [_vm._l((_vm.actions), function(action) {
+    return [_c('transition', {
+      attrs: {
+        "enter-active-class": "animated quick zoomIn",
+        "leave-active-class": "animated quick zoomOut"
+      }
+    }, [(action.tooltip) ? [(_vm.toggle) ? _c('li', {
+      directives: [{
+        name: "v-tooltip",
+        rawName: "v-v-tooltip",
+        value: ({
+          content: action.tooltip,
+          placement: _vm.tooltipPosition
+        }),
+        expression: "{ content: action.tooltip, placement: tooltipPosition }"
+      }],
       staticClass: "pointer",
       style: ({
         'background-color': _vm.bgColor
@@ -10619,8 +14055,54 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       }
     }, [_c('i', {
       staticClass: "material-icons"
-    }, [_vm._v(_vm._s(action.icon))])])
-  }))])], 1), _vm._v(" "), (_vm.rippleShow) ? [_c('div', {
+    }, [_vm._v(_vm._s(action.icon))])]) : _vm._e()] : [(_vm.toggle) ? _c('li', {
+      staticClass: "pointer",
+      style: ({
+        'background-color': _vm.bgColor
+      }),
+      on: {
+        "click": function($event) {
+          _vm.toParent(action.name)
+        }
+      }
+    }, [_c('i', {
+      staticClass: "material-icons"
+    }, [_vm._v(_vm._s(action.icon))])]) : _vm._e()]], 2)]
+  })], 2)])], 1), _vm._v(" "), (_vm.rippleShow) ? [(_vm.mainTooltip) ? [_c('div', {
+    directives: [{
+      name: "ripple",
+      rawName: "v-ripple",
+      value: (_vm.rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''),
+      expression: "rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''"
+    }, {
+      name: "v-tooltip",
+      rawName: "v-v-tooltip",
+      value: ({
+        content: _vm.mainTooltip,
+        placement: _vm.tooltipPosition
+      }),
+      expression: "{ content: mainTooltip, placement: tooltipPosition }"
+    }],
+    staticClass: "fab pointer",
+    style: ({
+      'background-color': _vm.bgColor
+    }),
+    on: {
+      "click": function($event) {
+        _vm.toggle = !_vm.toggle
+      }
+    }
+  }, [_c('i', {
+    staticClass: "material-icons md-36 main",
+    class: {
+      rotate: _vm.toggle
+    }
+  }, [_vm._v(_vm._s(_vm.mainIcon))]), _vm._v(" "), _c('i', {
+    staticClass: "material-icons md-36 close",
+    class: {
+      rotate: _vm.toggle
+    }
+  }, [_vm._v("add")])])] : [_c('div', {
     directives: [{
       name: "ripple",
       rawName: "v-ripple",
@@ -10637,31 +14119,59 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       }
     }
   }, [_c('i', {
-    staticClass: "material-icons md-36",
+    staticClass: "material-icons md-36 main",
+    class: {
+      rotate: _vm.toggle
+    }
+  }, [_vm._v(_vm._s(_vm.mainIcon))]), _vm._v(" "), _c('i', {
+    staticClass: "material-icons md-36 close",
+    class: {
+      rotate: _vm.toggle
+    }
+  }, [_vm._v("add")])])]] : [(_vm.mainTooltip) ? [_c('div', {
+    directives: [{
+      name: "v-tooltip",
+      rawName: "v-v-tooltip",
+      value: ({
+        content: _vm.mainTooltip,
+        placement: _vm.tooltipPosition
+      }),
+      expression: "{ content: mainTooltip, placement: tooltipPosition }"
+    }],
+    staticClass: "fab pointer",
+    style: ({
+      'background-color': _vm.bgColor
+    })
+  }, [_c('i', {
+    staticClass: "material-icons md-36 main",
+    class: {
+      rotate: _vm.toggle
+    }
+  }, [_vm._v(_vm._s(_vm.mainIcon))]), _vm._v(" "), _c('i', {
+    staticClass: "material-icons md-36 close",
     class: {
       rotate: _vm.toggle
     }
   }, [_vm._v("add")])])] : [_c('div', {
     staticClass: "fab pointer",
     style: ({
-      'background-color': _vm.bgColor,
-      'z-index': _vm.zIndex
-    }),
-    on: {
-      "click": function($event) {
-        _vm.toggle = !_vm.toggle
-      }
-    }
+      'background-color': _vm.bgColor
+    })
   }, [_c('i', {
-    staticClass: "material-icons md-36",
+    staticClass: "material-icons md-36 main",
     class: {
       rotate: _vm.toggle
     }
-  }, [_vm._v("add")])])]], 2)
+  }, [_vm._v(_vm._s(_vm.mainIcon))]), _vm._v(" "), _c('i', {
+    staticClass: "material-icons md-36 close",
+    class: {
+      rotate: _vm.toggle
+    }
+  }, [_vm._v("add")])])]]], 2)
 },staticRenderFns: []}
 
 /***/ }),
-/* 15 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
@@ -10713,7 +14223,11 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
   }, [_c('div', {
     staticClass: "columns"
   }, [_c('div', {
-    staticClass: "column"
+    staticClass: "column is-5",
+    staticStyle: {
+      "display": "flex",
+      "justify-content": "center"
+    }
   }, [_c('div', {
     staticClass: "field is-pulled-left"
   }, [_c('label', {
@@ -10731,10 +14245,10 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
   })], 1)])]), _vm._v(" "), _c('div', {
     staticClass: "column"
   }, [_c('div', {
-    staticClass: "field"
+    staticClass: "field has-text-left"
   }, [_c('label', {
-    staticClass: "label is-pulled-left"
-  }, [_vm._v("Position")]), _vm._v(" "), _c('br'), _vm._v(" "), _c('p', {
+    staticClass: "label"
+  }, [_vm._v("Position")]), _vm._v(" "), _c('p', {
     staticClass: "control"
   }, [_c('span', {
     staticClass: "select"
@@ -10758,9 +14272,79 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     }
   }, _vm._l((_vm.positions), function(pos) {
     return _c('option', [_vm._v(_vm._s(pos))])
-  }))])]), _vm._v(" "), _c('label', {
-    staticClass: "label is-pulled-left"
-  }, [_vm._v("First Icon")]), _vm._v(" "), _c('p', {
+  }))])])]), _vm._v(" "), _c('label', {
+    staticClass: "label",
+    staticStyle: {
+      "display": "flex",
+      "align-items": "center",
+      "padding-right": "1rem"
+    }
+  }, [_vm._v("\n                                            Main Icon & Tooltip\n                                        ")]), _vm._v(" "), _c('div', {
+    staticClass: "field is-horizontal"
+  }, [_c('div', {
+    staticClass: "field-body"
+  }, [_c('div', {
+    staticClass: "field"
+  }, [_c('p', {
+    staticClass: "control"
+  }, [_c('input', {
+    directives: [{
+      name: "model",
+      rawName: "v-model",
+      value: (_vm.mainIcon),
+      expression: "mainIcon"
+    }],
+    staticClass: "input",
+    attrs: {
+      "type": "text"
+    },
+    domProps: {
+      "value": (_vm.mainIcon)
+    },
+    on: {
+      "input": function($event) {
+        if ($event.target.composing) { return; }
+        _vm.mainIcon = $event.target.value
+      }
+    }
+  })])]), _vm._v(" "), _c('div', {
+    staticClass: "field"
+  }, [_c('p', {
+    staticClass: "control"
+  }, [_c('input', {
+    directives: [{
+      name: "model",
+      rawName: "v-model",
+      value: (_vm.mainTooltip),
+      expression: "mainTooltip"
+    }],
+    staticClass: "input",
+    attrs: {
+      "type": "text"
+    },
+    domProps: {
+      "value": (_vm.mainTooltip)
+    },
+    on: {
+      "input": function($event) {
+        if ($event.target.composing) { return; }
+        _vm.mainTooltip = $event.target.value
+      }
+    }
+  })])])])]), _vm._v(" "), _c('label', {
+    staticClass: "label",
+    staticStyle: {
+      "display": "flex",
+      "align-items": "center",
+      "padding-right": "1rem"
+    }
+  }, [_vm._v("\n                                            First Icon & Tooltip\n                                        ")]), _vm._v(" "), _c('div', {
+    staticClass: "field is-horizontal"
+  }, [_c('div', {
+    staticClass: "field-body"
+  }, [_c('div', {
+    staticClass: "field"
+  }, [_c('p', {
     staticClass: "control"
   }, [_c('input', {
     directives: [{
@@ -10782,9 +14366,44 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
         _vm.firstIcon = $event.target.value
       }
     }
-  })]), _vm._v(" "), _c('label', {
-    staticClass: "label is-pulled-left"
-  }, [_vm._v("Second Icon")]), _vm._v(" "), _c('p', {
+  })])]), _vm._v(" "), _c('div', {
+    staticClass: "field"
+  }, [_c('p', {
+    staticClass: "control"
+  }, [_c('input', {
+    directives: [{
+      name: "model",
+      rawName: "v-model",
+      value: (_vm.firstTooltip),
+      expression: "firstTooltip"
+    }],
+    staticClass: "input",
+    attrs: {
+      "type": "text"
+    },
+    domProps: {
+      "value": (_vm.firstTooltip)
+    },
+    on: {
+      "input": function($event) {
+        if ($event.target.composing) { return; }
+        _vm.firstTooltip = $event.target.value
+      }
+    }
+  })])])])]), _vm._v(" "), _c('label', {
+    staticClass: "label",
+    staticStyle: {
+      "display": "flex",
+      "align-items": "center",
+      "padding-right": "1rem"
+    }
+  }, [_vm._v("\n                                            Second Icon & Tooltip\n                                        ")]), _vm._v(" "), _c('div', {
+    staticClass: "field is-horizontal"
+  }, [_c('div', {
+    staticClass: "field-body"
+  }, [_c('div', {
+    staticClass: "field"
+  }, [_c('p', {
     staticClass: "control"
   }, [_c('input', {
     directives: [{
@@ -10806,7 +14425,31 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
         _vm.secondIcon = $event.target.value
       }
     }
-  })])])])]), _vm._v(" "), _c('div', {
+  })])]), _vm._v(" "), _c('div', {
+    staticClass: "field"
+  }, [_c('p', {
+    staticClass: "control"
+  }, [_c('input', {
+    directives: [{
+      name: "model",
+      rawName: "v-model",
+      value: (_vm.secondTooltip),
+      expression: "secondTooltip"
+    }],
+    staticClass: "input",
+    attrs: {
+      "type": "text"
+    },
+    domProps: {
+      "value": (_vm.secondTooltip)
+    },
+    on: {
+      "input": function($event) {
+        if ($event.target.composing) { return; }
+        _vm.secondTooltip = $event.target.value
+      }
+    }
+  })])])])])])]), _vm._v(" "), _c('div', {
     staticClass: "columns"
   }, [_c('div', {
     staticClass: "column has-text-centered"
@@ -10820,20 +14463,24 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     staticClass: "container"
   }, [_c('div', {
     staticClass: "content has-text-centered"
-  }, [_c('p', [_c('strong', [_vm._v("Floating Action Button Vue Directive")]), _vm._v(" by "), _c('a', {
+  }, [_c('p', [_c('strong', [_vm._v("Floating Action Button Vue Component")]), _vm._v(" by "), _c('a', {
     attrs: {
       "href": _vm.teamUrl
     }
-  }, [_vm._v("Pygmy Team")]), _vm._v(".\n                ")]), _vm._v(" "), _vm._m(2)])])]), _vm._v(" "), _c('fab', {
+  }, [_vm._v("Pygmy Team")]), _vm._v(".\n                    ")]), _vm._v(" "), _vm._m(2)])])]), _vm._v(" "), _c('fab', {
     attrs: {
       "position": _vm.position,
       "bg-color": _vm.colors.hex,
+      "main-icon": _vm.mainIcon,
+      "main-tooltip": _vm.mainTooltip,
       "actions": [{
         name: 'alertMe',
-        icon: _vm.firstIcon
+        icon: _vm.firstIcon,
+        tooltip: _vm.firstTooltip
       }, {
         name: 'alertMe',
-        icon: _vm.secondIcon
+        icon: _vm.secondIcon,
+        tooltip: _vm.secondTooltip
       }]
     },
     on: {
@@ -10863,7 +14510,7 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
   }, [_c('img', {
     attrs: {
       "width": "350px",
-      "src": __webpack_require__(10)
+      "src": __webpack_require__(14)
     }
   })]), _vm._v(" "), _c('div', {
     staticClass: "is-pulled-left",
@@ -10875,14 +14522,24 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     staticStyle: {
       "margin-bottom": ".5rem"
     }
-  }, [_vm._v("\n                                Floating Action Button\n                            ")]), _vm._v(" "), _c('hr', {
+  }, [_vm._v("\n                                    Floating Action Button\n                                ")]), _vm._v(" "), _c('hr', {
     staticClass: "is-marginless"
   }), _vm._v(" "), _c('h2', {
     staticClass: "subtitle text-light-grey",
     staticStyle: {
       "margin-top": ".5rem"
     }
-  }, [_vm._v("\n                                A Vue Component\n                            ")])])])])])])])
+  }, [_vm._v("\n                                    A Vue Component\n                                    "), _c('span', {
+    staticClass: "is-pulled-right"
+  }, [_c('a', {
+    staticClass: "github-button",
+    attrs: {
+      "href": "https://github.com/PygmySlowLoris/vue-fab",
+      "data-icon": "octicon-star",
+      "data-size": "large",
+      "aria-label": "Star PygmySlowLoris/vue-fab on GitHub"
+    }
+  }, [_vm._v("Star")])])])])])])])])])
 },function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
   return _c('div', {
     staticClass: "heading"
@@ -10908,7 +14565,7 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
 }]}
 
 /***/ }),
-/* 16 */
+/* 21 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -10999,20 +14656,7 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
 });
 
 /***/ }),
-/* 17 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(8);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(3)("348b9324", content, true);
-
-/***/ }),
-/* 18 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
@@ -11022,10 +14666,36 @@ var content = __webpack_require__(9);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(3)("108b9cc6", content, true);
+var update = __webpack_require__(1)("4ff81421", content, true);
 
 /***/ }),
-/* 19 */
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(10);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(1)("3c3d3883", content, true);
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(11);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(1)("108b9cc6", content, true);
+
+/***/ }),
+/* 25 */
 /***/ (function(module, exports) {
 
 /**
@@ -11055,33 +14725,6 @@ module.exports = function listToStyles (parentId, list) {
   }
   return styles
 }
-
-
-/***/ }),
-/* 20 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
 
 
 /***/ })

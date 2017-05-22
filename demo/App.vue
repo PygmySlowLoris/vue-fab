@@ -155,7 +155,7 @@
                 :bg-color="colors.hex"
                 :main-icon="mainIcon"
                 :main-tooltip="mainTooltip"
-                :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip}]"
+                :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip, color:'#d11014'},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip}]"
                 @alertMe="alert"
         ></fab>
     </div>

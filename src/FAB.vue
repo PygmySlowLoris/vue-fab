@@ -13,14 +13,14 @@
                                 leave-active-class="animated quick zoomOut"
                         >
                             <template v-if="action.tooltip">
-                                <li v-if="toggle" :style="{ 'background-color': bgColor }"
+                                <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
                                     v-v-tooltip="{ content: action.tooltip, placement: tooltipPosition }"
                                     @click="toParent(action.name)" class="pointer">
                                     <i class="material-icons">{{action.icon}}</i>
                                 </li>
                             </template>
                             <template v-else>
-                                <li v-if="toggle" :style="{ 'background-color': bgColor }"
+                                <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
                                     @click="toParent(action.name)" class="pointer">
                                     <i class="material-icons">{{action.icon}}</i>
                                 </li>

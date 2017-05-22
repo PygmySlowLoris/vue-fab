@@ -41,8 +41,16 @@ And
 |  `ripple-color`       | String    | <b>Default 'light'</b> <br>Options: 'light' or 'dark'.  |
 |  `main-icon`       | String    | <b>Default 'add'</b> <br>Use icons from the material icon library.  |
 |  `main-tooltip`       | String    | <b>Default `null`</b>  |
-|  `actions`            | Object    | Has <b>three properties</b>:   <br> -`name` (String) Name of the event. <br> -`icon`(String) Icon name. (Please refer to [Material icons](https://material.io/icons/)) <br> -`tooltip` (String) If not used, tooltip won't appear.|
+|  `actions`            | Object    | <b>[Details bellow](https://github.com/PygmySlowLoris/vue-fab/#actions)</b>
 
+### actions
+
+| Properties            | Type      | Values            |
+| :---------------      | :-------  | :---------        |
+|  `name`               | String    | Name of the event |
+|  `icon`               | String    | Icon name (Please refer to [Material icons](https://material.io/icons/))        |
+|  `tooltip`            | String    | If not used, tooltip won't appear.  |
+|  `color`              | String    | <b>Default `bg-color` value</b><br> Accepts all color formats: HEX, RGB & RGBA  |
 
 ##  Examples
 

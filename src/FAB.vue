@@ -14,7 +14,7 @@
                         >
                             <template v-if="action.tooltip">
                                 <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
-                                    v-v-tooltip="{ content: action.tooltip, placement: tooltipPosition }"
+                                    v-tooltip="{ content: action.tooltip, placement: tooltipPosition }"
                                     @click="toParent(action.name)" class="pointer">
                                     <i class="material-icons">{{action.icon}}</i>
                                 </li>
@@ -33,7 +33,7 @@
         <template v-if="rippleShow">
             <template v-if="mainTooltip">
                 <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
-                     v-v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
+                     v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
                      class="fab pointer" :style="{ 'background-color': bgColor }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
@@ -51,7 +51,7 @@
         </template>
         <template v-else>
             <template v-if="mainTooltip">
-                <div v-v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
+                <div v-bind:v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
                      class="fab pointer" :style="{ 'background-color': bgColor }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
@@ -76,7 +76,7 @@
 
     export default {
         mixins: [clickaway],
-        directives: {Ripple, VTooltip},
+        directives: {Ripple, tooltip: VTooltip},
         data() {
             return {
                 toggle: false,

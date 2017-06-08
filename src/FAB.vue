@@ -269,6 +269,9 @@
         align-items: center;
         box-shadow: 0 10px 10px rgba(0, 0, 0, 0.20), 0 4px 4px rgba(0, 0, 0, 0.15);
         z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .fab .material-icons {
@@ -282,13 +285,11 @@
     .fab .material-icons.main {
         opacity: 1;
         position: absolute;
-        left: .9rem;
     }
 
     .fab .material-icons.close {
         opacity: 0;
         position: absolute;
-        left: .9rem;
     }
 
     .fab .material-icons.main.rotate {

@@ -14,7 +14,7 @@
                         >
                             <template v-if="action.tooltip">
                                 <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
-                                    v-tooltip="{ content: action.tooltip, placement: tooltipPosition }"
+                                    v-tooltip="{ content: action.tooltip, placement: tooltipPosition, classes: 'fab-tooltip' }"
                                     @click="toParent(action.name)" class="pointer">
                                     <i class="material-icons">{{action.icon}}</i>
                                 </li>
@@ -33,7 +33,7 @@
         <template v-if="rippleShow">
             <template v-if="mainTooltip">
                 <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
-                     v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
+                     v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip' }"
                      class="fab pointer" :style="{ 'background-color': bgColor }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
@@ -51,7 +51,7 @@
         </template>
         <template v-else>
             <template v-if="mainTooltip">
-                <div v-bind:v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
+                <div v-bind:v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip'}"
                      class="fab pointer" :style="{ 'background-color': bgColor }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
@@ -218,30 +218,30 @@
 </script>
 
 <style>
-    .tooltip {
+    .fab-tooltip.tooltip {
         display: block !important;
         padding: .5rem 1rem;
         z-index: 10000;
     }
 
-    .tooltip .tooltip-inner {
+    .fab-tooltip.tooltip .tooltip-inner {
         background: #333333;
         font-size: .85rem;
         color: white;
         padding: .2rem 1rem;
     }
 
-    .tooltip .tooltip-arrow{
+    .fab-tooltip.tooltip .tooltip-arrow{
         display: none;
     }
 
-    .tooltip[aria-hidden='true'] {
+    .fab-tooltip.tooltip[aria-hidden='true'] {
         visibility: hidden;
         opacity: 0;
         transition: opacity .15s, visibility .15s;
     }
 
-    .tooltip[aria-hidden='false'] {
+    .fab-tooltip.tooltip[aria-hidden='false'] {
         visibility: visible;
         opacity: 1;
         transition: opacity .15s;

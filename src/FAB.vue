@@ -51,7 +51,7 @@
         </template>
         <template v-else>
             <template v-if="mainTooltip">
-                <div v-bind:v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip'}"
+                <div v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip'}"
                      class="fab pointer" :style="{ 'background-color': bgColor }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
@@ -220,18 +220,18 @@
 <style>
     .fab-tooltip.tooltip {
         display: block !important;
-        padding: .5rem 1rem;
+        padding: 4px;
         z-index: 10000;
     }
 
     .fab-tooltip.tooltip .tooltip-inner {
         background: #333333;
-        font-size: .85rem;
         color: white;
-        padding: .2rem 1rem;
+        border-radius: 0px;
+        padding: 5px 10px 4px;
     }
 
-    .fab-tooltip.tooltip .tooltip-arrow{
+    .fab-tooltip.tooltip tooltip-arrow{
         display: none;
     }
 

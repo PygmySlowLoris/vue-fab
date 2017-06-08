@@ -228,7 +228,6 @@
         background: #333333;
         color: white;
         border-radius: 0px;
-        font-size: .85rem;
         padding: 5px 10px 4px;
     }
 

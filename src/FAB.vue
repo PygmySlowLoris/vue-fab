@@ -13,14 +13,14 @@
                                 leave-active-class="animated quick zoomOut"
                         >
                             <template v-if="action.tooltip">
-                                <li v-if="toggle" :style="{ 'background-color': bgColor }"
-                                    v-v-tooltip="{ content: action.tooltip, placement: tooltipPosition }"
+                                <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
+                                    v-tooltip="{ content: action.tooltip, placement: tooltipPosition }"
                                     @click="toParent(action.name)" class="pointer">
                                     <i class="material-icons">{{action.icon}}</i>
                                 </li>
                             </template>
                             <template v-else>
-                                <li v-if="toggle" :style="{ 'background-color': bgColor }"
+                                <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
                                     @click="toParent(action.name)" class="pointer">
                                     <i class="material-icons">{{action.icon}}</i>
                                 </li>
@@ -33,7 +33,7 @@
         <template v-if="rippleShow">
             <template v-if="mainTooltip">
                 <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
-                     v-v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
+                     v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
                      class="fab pointer" :style="{ 'background-color': bgColor }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
@@ -51,7 +51,7 @@
         </template>
         <template v-else>
             <template v-if="mainTooltip">
-                <div v-v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
+                <div v-bind:v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
                      class="fab pointer" :style="{ 'background-color': bgColor }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
@@ -76,7 +76,7 @@
 
     export default {
         mixins: [clickaway],
-        directives: {Ripple, VTooltip},
+        directives: {Ripple, tooltip: VTooltip},
         data() {
             return {
                 toggle: false,
@@ -269,6 +269,9 @@
         align-items: center;
         box-shadow: 0 10px 10px rgba(0, 0, 0, 0.20), 0 4px 4px rgba(0, 0, 0, 0.15);
         z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .fab .material-icons {
@@ -282,13 +285,11 @@
     .fab .material-icons.main {
         opacity: 1;
         position: absolute;
-        left: .9rem;
     }
 
     .fab .material-icons.close {
         opacity: 0;
         position: absolute;
-        left: .9rem;
     }
 
     .fab .material-icons.main.rotate {

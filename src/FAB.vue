@@ -51,7 +51,7 @@
         </template>
         <template v-else>
             <template v-if="mainTooltip">
-                <div v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip'}"
+                <div v-bind:v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip'}"
                      class="fab pointer" :style="{ 'background-color': bgColor }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
@@ -150,10 +150,10 @@
         },
         methods: {
             tooltipPos() {
-                if(this.position === 'top-right' || this.position === 'bototm-right') {
-                    this.mainTooltip.placement = 'left'
+                if(this.position === 'top-right' || this.position === 'bottom-right') {
+                    this.tooltipPosition = 'left'
                 }  else {
-                    this.mainTooltip.placement = 'right'
+                    this.tooltipPosition = 'right'
                 }
             },
             toParent(name) {
@@ -228,6 +228,7 @@
         background: #333333;
         color: white;
         border-radius: 0px;
+        font-size: .85rem;
         padding: 5px 10px 4px;
     }
 

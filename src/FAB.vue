@@ -284,12 +284,10 @@
 
     .fab .material-icons.main {
         opacity: 1;
-        position: absolute;
     }
 
     .fab .material-icons.close {
         opacity: 0;
-        position: absolute;
     }
 
     .fab .material-icons.main.rotate {

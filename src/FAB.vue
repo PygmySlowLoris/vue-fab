@@ -269,8 +269,6 @@
         align-items: center;
         box-shadow: 0 10px 10px rgba(0, 0, 0, 0.20), 0 4px 4px rgba(0, 0, 0, 0.15);
         z-index: 2;
-        display: flex;
-        align-items: center;
         justify-content: center;
     }
 
@@ -313,7 +311,10 @@
     .fab-list {
         position: relative;
         z-index: 1;
-        margin: 2vh 0.5vw;
+        margin: 2vh 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     .fab-list li {
@@ -383,7 +384,7 @@
 
     @media screen and (max-width: 768px) {
         .fab-list {
-            margin: 2vh 1.8vw;
+            margin: 2vh 0;
         }
 
         .fab-list li {

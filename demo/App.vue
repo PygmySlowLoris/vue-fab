@@ -61,15 +61,39 @@
                                         </div>
                                     </div>
                                     <div class="column">
-                                        <div class="field has-text-left">
-                                            <label class="label">Position</label>
-                                            <p class="control">
-                                                <span class="select">
-                                                  <select v-model="position">
-                                                    <option v-for="pos in positions">{{pos}}</option>
-                                                  </select>
-                                                </span>
-                                            </p>
+                                        <div class="field is-horizontal">
+                                            <div class="field-body">
+                                                <div class="field has-text-left">
+                                                    <label class="label">Position</label>
+                                                    <p class="control is-expanded">
+                                                        <span class="select is-fullwidth">
+                                                          <select v-model="position">
+                                                            <option v-for="pos in positions">{{pos}}</option>
+                                                          </select>
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                <div class="field has-text-left">
+                                                    <label class="label">Position Type</label>
+                                                    <p class="control is-expandend">
+                                                        <span class="select is-fullwidth">
+                                                            <select v-model="positionType">
+                                                                <option v-for="type in positionTypes">{{type}}</option>
+                                                            </select>
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                <div class="field has-text-left">
+                                                    <label class="label">Size</label>
+                                                    <p class="control is-expandend">
+                                                        <span class="select is-fullwidth">
+                                                            <select v-model="iconSizes">
+                                                                <option v-for="size in sizes">{{size}}</option>
+                                                            </select>
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
                                         <label class="label" style="display: flex; align-items: center; padding-right: 1rem;">
                                             Main Icon & Tooltip
@@ -152,6 +176,8 @@
         </footer>
         <fab
                 :position="position"
+                :icon-size="iconSizes"
+                :position-type="positionType"
                 :bg-color="colors.hex"
                 :main-icon="mainIcon"
                 :main-tooltip="mainTooltip"
@@ -207,7 +233,18 @@
                     'top-right',
                     'top-left',
                 ],
+                positionTypes: [
+                    'fixed',
+                    'absolute'
+                ],
+                sizes: [
+                    'small',
+                    'medium',
+                    'large'
+                ],
                 position: 'bottom-right',
+                positionType: 'fixed',
+                iconSizes: 'medium',
                 colors: defaultProps,
                 mainIcon: 'add',
                 mainTooltip: 'Hello',

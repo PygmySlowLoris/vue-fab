@@ -35,10 +35,12 @@ And
 | Properties            | Type      | Values     |
 | :---------------      | :-------  | :--------- |
 |  `bg-color`           | String    | <b>Default '#333333'</b><br> Accepts all color formats: HEX, RGB & RGBA |
-|  `position`           | String    | <b>Default 'bottom-left'</b> <br>'bottom-left', 'bottom-right', 'top-left','top-right'  |
+|  `position`           | String    | <b>Default 'bottom-left'</b> <br>Options: 'bottom-left', 'bottom-right', 'top-left','top-right'  |
+|  `position-type`           | String    | <b>Default 'fixed'</b> <br>Options: 'fixed' or 'absolute'|
 |  `z-index`            | String    | <b>Default '999'</b> <br>Set any value that suits your needs.  |
 |  `ripple-show`        | Boolean   | <b>Default true</b> <br>Options: true or false.  |
 |  `ripple-color`       | String    | <b>Default 'light'</b> <br>Options: 'light' or 'dark'.  |
+|  `icon-size`       | String    | <b>Default 'medium'</b> <br>Options: 'small', 'medium' or 'large'.  |
 |  `main-icon`       | String    | <b>Default 'add'</b> <br>Use icons from the material icon library.  |
 |  `main-tooltip`       | String    | <b>Default `null`</b>  |
 |  `actions`            | Object    | <b>[Details bellow](https://github.com/PygmySlowLoris/vue-fab/#actions)</b>

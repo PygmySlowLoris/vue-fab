@@ -148,16 +148,16 @@
             paddingAmount() {
                 switch (this.iconSize) {
                     case 'small':
-                        return '1.8rem';
+                        return '28px';
                         break;
                     case 'medium':
-                        return '2rem';
+                        return '32px';
                         break;
                     case 'large':
-                        return '2.5rem';
+                        return '38px';
                         break;
                     default:
-                        return '1.9rem';
+                        return '32px';
                 }
             },
             listPos() {
@@ -313,7 +313,7 @@
         border-radius: 100px;
         /*width: 65px;*/
         /*height: 65px;*/
-        padding: 2rem;
+        padding: 30px;
         position: relative;
         overflow: hidden;
         display: flex;
@@ -371,7 +371,7 @@
     .fab-list li {
         /*width: 50px;*/
         /*height: 50px;*/
-        padding: .8rem;
+        padding: 10px;
         margin-top: 2vh;
         display: flex;
         align-items: center;

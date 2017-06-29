@@ -353,7 +353,11 @@
         width: 0;
         overflow: hidden;
         -webkit-transition: opacity .3s ease-in, -webkit-transform .4s; /* Safari */
+        -webkit-transition: height .3s ease-in, -webkit-transform .4s; /* Safari */
+        -webkit-transition: width .3s ease-in, -webkit-transform .4s; /* Safari */
         transition: opacity .3s ease-in, transform .4s;
+        transition: width .3s ease-in, transform .4s;
+        transition: height .3s ease-in, transform .4s;
     }
 
     .fab .material-icons.close.rotate {
@@ -364,7 +368,11 @@
         height: inherit;
         width: inherit;
         -webkit-transition: opacity .3s ease-in, -webkit-transform .4s; /* Safari */
+        -webkit-transition: height .3s ease-in, -webkit-transform .4s; /* Safari */
+        -webkit-transition: width .3s ease-in, -webkit-transform .4s; /* Safari */
         transition: opacity .3s ease-in, transform .4s;
+        transition: width .3s ease-in, transform .4s;
+        transition: height .3s ease-in, transform .4s;
     }
 
     .fab-list {

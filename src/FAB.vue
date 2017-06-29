@@ -148,16 +148,16 @@
             paddingAmount() {
                 switch (this.iconSize) {
                     case 'small':
-                        return '28px';
+                        return '10px';
                         break;
                     case 'medium':
-                        return '32px';
+                        return '14px';
                         break;
                     case 'large':
-                        return '38px';
+                        return '20px';
                         break;
                     default:
-                        return '32px';
+                        return '14px';
                 }
             },
             listPos() {
@@ -313,7 +313,7 @@
         border-radius: 100px;
         /*width: 65px;*/
         /*height: 65px;*/
-        padding: 30px;
+        padding: 10px;
         position: relative;
         overflow: hidden;
         display: flex;
@@ -333,10 +333,15 @@
 
     .fab .material-icons.main {
         opacity: 1;
+        height: inherit;
+        width: inherit;
     }
 
     .fab .material-icons.close {
         opacity: 0;
+        height: 0;
+        width: 0;
+        overflow: hidden;
     }
 
     .fab .material-icons.main.rotate {
@@ -344,6 +349,9 @@
         -webkit-transform: rotate(315deg); /* Chrome, Safari, Opera */
         transform: rotate(315deg);
         opacity: 0;
+        height: 0;
+        width: 0;
+        overflow: hidden;
         -webkit-transition: opacity .3s ease-in, -webkit-transform .4s; /* Safari */
         transition: opacity .3s ease-in, transform .4s;
     }
@@ -353,6 +361,8 @@
         -webkit-transform: rotate(315deg); /* Chrome, Safari, Opera */
         transform: rotate(315deg);
         opacity: 1;
+        height: inherit;
+        width: inherit;
         -webkit-transition: opacity .3s ease-in, -webkit-transform .4s; /* Safari */
         transition: opacity .3s ease-in, transform .4s;
     }

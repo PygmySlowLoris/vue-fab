@@ -1,6 +1,6 @@
 <template>
     <div :id="position + '-wrapper'" class="fab-wrapper" v-on-clickaway="away"
-         :style="[pos, {zIndex: zIndex}]">
+         :style="[ pos, {zIndex: zIndex}, {position: positionType} ]">
         <div :id="position + '-action'" class="actions-container" :style="listPos">
             <transition name="fab-actions-appear"
                         :enter-active-class="transitionEnter"
@@ -14,15 +14,15 @@
                         >
                             <template v-if="action.tooltip">
                                 <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
-                                    v-tooltip="{ content: action.tooltip, placement: tooltipPosition }"
+                                    v-tooltip="{ content: action.tooltip, placement: tooltipPosition, classes: 'fab-tooltip' }"
                                     @click="toParent(action.name)" class="pointer">
-                                    <i class="material-icons">{{action.icon}}</i>
+                                    <i :class="[ actionIconSize ,'material-icons']">{{action.icon}}</i>
                                 </li>
                             </template>
                             <template v-else>
                                 <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
                                     @click="toParent(action.name)" class="pointer">
-                                    <i class="material-icons">{{action.icon}}</i>
+                                    <i :class="[ actionIconSize ,'material-icons']">{{action.icon}}</i>
                                 </li>
                             </template>
                         </transition>
@@ -33,33 +33,33 @@
         <template v-if="rippleShow">
             <template v-if="mainTooltip">
                 <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
-                     v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
-                     class="fab pointer" :style="{ 'background-color': bgColor }"
+                     v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip' }"
+                     class="fab pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
-                    <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
-                    <i class="material-icons md-36 close" :class="{ rotate: toggle }">add</i>
+                    <i :class="[ mainIconSize , { rotate: toggle } ,'material-icons main']">{{mainIcon}}</i>
+                    <i :class="[ mainIconSize , { rotate: toggle } ,'material-icons close']">add</i>
                 </div>
             </template>
             <template v-else>
                 <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
-                     class="fab pointer" :style="{ 'background-color': bgColor }"
+                     class="fab pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
-                    <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
-                    <i class="material-icons md-36 close" :class="{ rotate: toggle }">add</i>
+                    <i :class="[ mainIconSize , { rotate: toggle }, 'material-icons main']">{{mainIcon}}</i>
+                    <i :class="[ mainIconSize , { rotate: toggle }, 'material-icons close']">add</i>
                 </div>
             </template>
         </template>
         <template v-else>
             <template v-if="mainTooltip">
-                <div v-tooltip="{ content: mainTooltip, placement: tooltipPosition }"
-                     class="fab pointer" :style="{ 'background-color': bgColor }"
+                <div v-bind:v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip'}"
+                     class="fab pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
                     <i class="material-icons md-36 close" :class="{ rotate: toggle }">add</i>
                 </div>
             </template>
             <template v-else>
-                <div class="fab pointer" :style="{ 'background-color': bgColor }"
+                <div class="fab pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
                     <i class="material-icons md-36 close" :class="{ rotate: toggle }">add</i>
@@ -91,6 +91,9 @@
             position: {
                 default: 'bottom-right',
             },
+            positionType: {
+                default: 'fixed',
+            },
             zIndex: {
                 default: '999',
             },
@@ -103,12 +106,60 @@
             mainIcon: {
                 default: 'add'
             },
+            iconSize: {
+                default: 'medium'
+            },
             mainTooltip: {
                 default: null
             },
             actions: {}
         },
         computed: {
+            actionIconSize() {
+                switch (this.iconSize) {
+                    case 'small':
+                        return 'md-18';
+                        break;
+                    case 'medium':
+                        return 'md-24';
+                        break;
+                    case 'large':
+                        return 'md-36';
+                        break;
+                    default:
+                        return 'md-24';
+                }
+            },
+            mainIconSize() {
+                switch (this.iconSize) {
+                    case 'small':
+                        return 'md-24';
+                        break;
+                    case 'medium':
+                        return 'md-36';
+                        break;
+                    case 'large':
+                        return 'md-48';
+                        break;
+                    default:
+                        return 'md-36';
+                }
+            },
+            paddingAmount() {
+                switch (this.iconSize) {
+                    case 'small':
+                        return '28px';
+                        break;
+                    case 'medium':
+                        return '32px';
+                        break;
+                    case 'large':
+                        return '38px';
+                        break;
+                    default:
+                        return '32px';
+                }
+            },
             listPos() {
                 if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
@@ -218,30 +269,30 @@
 </script>
 
 <style>
-    .tooltip {
+    .fab-tooltip.tooltip {
         display: block !important;
-        padding: .5rem 1rem;
+        padding: 4px;
         z-index: 10000;
     }
 
-    .tooltip .tooltip-inner {
+    .fab-tooltip.tooltip .tooltip-inner {
         background: #333333;
-        font-size: .85rem;
         color: white;
-        padding: .2rem 1rem;
+        border-radius: 0px;
+        padding: 5px 10px 4px;
     }
 
-    .tooltip .tooltip-arrow{
+    .fab-tooltip.tooltip tooltip-arrow{
         display: none;
     }
 
-    .tooltip[aria-hidden='true'] {
+    .fab-tooltip.tooltip[aria-hidden='true'] {
         visibility: hidden;
         opacity: 0;
         transition: opacity .15s, visibility .15s;
     }
 
-    .tooltip[aria-hidden='false'] {
+    .fab-tooltip.tooltip[aria-hidden='false'] {
         visibility: visible;
         opacity: 1;
         transition: opacity .15s;
@@ -255,22 +306,20 @@
     }
 
     .fab-wrapper {
-        position: fixed;
         z-index: 999;
     }
 
     .fab {
         border-radius: 100px;
-        width: 65px;
+        /*width: 65px;*/
+        /*height: 65px;*/
+        padding: 30px;
         position: relative;
         overflow: hidden;
-        height: 65px;
         display: flex;
         align-items: center;
         box-shadow: 0 10px 10px rgba(0, 0, 0, 0.20), 0 4px 4px rgba(0, 0, 0, 0.15);
         z-index: 2;
-        display: flex;
-        align-items: center;
         justify-content: center;
     }
 
@@ -313,12 +362,16 @@
     .fab-list {
         position: relative;
         z-index: 1;
-        margin: 2vh 0.5vw;
+        margin: 2vh 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     .fab-list li {
-        width: 50px;
-        height: 50px;
+        /*width: 50px;*/
+        /*height: 50px;*/
+        padding: 10px;
         margin-top: 2vh;
         display: flex;
         align-items: center;
@@ -383,25 +436,27 @@
 
     @media screen and (max-width: 768px) {
         .fab-list {
-            margin: 2vh 1.8vw;
+            margin: 2vh 0;
         }
 
         .fab-list li {
-            width: 40px;
-            height: 40px;
+            /*width: 40px;*/
+            /*height: 40px;*/
+            /*padding: .6rem;*/
         }
 
         .fab-list li i {
-            font-size: 24px !important;
+            /*font-size: 24px !important;*/
         }
 
         .fab {
-            width: 55px;
-            height: 55px;
+            /*width: 55px;*/
+            /*height: 55px;*/
+            /*padding: 1.5rem;*/
         }
 
         .fab i {
-            font-size: 34px !important;
+            /*font-size: 34px !important;*/
         }
 
     }

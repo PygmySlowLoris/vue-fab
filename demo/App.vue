@@ -27,7 +27,8 @@
                                     A Vue Component
                                     <span class="is-pulled-right">
                                         <!-- Place this tag where you want the button to render. -->
-<a class="github-button" href="https://github.com/PygmySlowLoris/vue-fab" data-icon="octicon-star" data-size="large" aria-label="Star PygmySlowLoris/vue-fab on GitHub">Star</a>
+<a class="github-button" href="https://github.com/PygmySlowLoris/vue-fab" data-icon="octicon-star" data-size="large"
+   aria-label="Star PygmySlowLoris/vue-fab on GitHub">Star</a>
                                     </span>
                                 </h2>
                             </div>
@@ -52,7 +53,7 @@
                             </div>
                             <div class="content">
                                 <div class="columns">
-                                    <div class="column is-5" style="display: flex; justify-content: center">
+                                    <div class="column is-4" style="display: flex; justify-content: center">
                                         <div class="field is-pulled-left">
                                             <label class="label">Color</label>
                                             <p class="control">
@@ -93,9 +94,20 @@
                                                         </span>
                                                     </p>
                                                 </div>
+                                                <div class="field has-text-left">
+                                                    <label class="label">Tooltip event</label>
+                                                    <p class="control is-expandend">
+                                                        <span class="select is-fullwidth">
+                                                            <select v-model="tooltipEvent">
+                                                                <option v-for="type in tooltipEvents">{{type}}</option>
+                                                            </select>
+                                                        </span>
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
-                                        <label class="label" style="display: flex; align-items: center; padding-right: 1rem;">
+                                        <label class="label"
+                                               style="display: flex; align-items: center; padding-right: 1rem;">
                                             Main Icon & Tooltip
                                         </label>
                                         <div class="field is-horizontal">
@@ -112,7 +124,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <label class="label" style="display: flex; align-items: center; padding-right: 1rem;">
+                                        <label class="label"
+                                               style="display: flex; align-items: center; padding-right: 1rem;">
                                             First Icon & Tooltip
                                         </label>
                                         <div class="field is-horizontal">
@@ -129,7 +142,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <label class="label" style="display: flex; align-items: center; padding-right: 1rem;">
+                                        <label class="label"
+                                               style="display: flex; align-items: center; padding-right: 1rem;">
                                             Second Icon & Tooltip
                                         </label>
                                         <div class="field is-horizontal">
@@ -183,6 +197,7 @@
                 :main-tooltip="mainTooltip"
                 :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip, color:'#d11014'},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip}]"
                 @alertMe="alert"
+                :fixed-tooltip="fixedTooltip"
         ></fab>
     </div>
 </template>
@@ -237,6 +252,10 @@
                     'fixed',
                     'absolute'
                 ],
+                tooltipEvents: [
+                    'hover',
+                    'fixed'
+                ],
                 sizes: [
                     'small',
                     'medium',
@@ -244,6 +263,7 @@
                 ],
                 position: 'bottom-right',
                 positionType: 'fixed',
+                tooltipEvent: 'hover',
                 iconSizes: 'medium',
                 colors: defaultProps,
                 mainIcon: 'add',
@@ -252,6 +272,11 @@
                 firstTooltip: 'cached',
                 secondIcon: 'add_alert',
                 secondTooltip: 'add_alert'
+            }
+        },
+        computed: {
+            fixedTooltip() {
+                return this.tooltipEvent === 'fixed';
             }
         },
         methods: {
@@ -286,7 +311,6 @@
         margin: 1.5rem 0;
         border-top: dashed 1px;
     }
-
 
     li {
         display: inline-block;
@@ -329,7 +353,8 @@
     }
 
     .vertical-separator {
-        display: flex; justify-content: space-around;
+        display: flex;
+        justify-content: space-around;
     }
 
     .vertical-separator .line {

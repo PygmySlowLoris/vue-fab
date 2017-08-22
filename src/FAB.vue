@@ -13,9 +13,10 @@
                                 leave-active-class="animated quick zoomOut"
                         >
                             <template v-if="action.tooltip">
-                                <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
-                                    v-tooltip="{ content: action.tooltip, placement: tooltipPosition, classes: 'fab-tooltip' }"
-                                    @click="toParent(action.name)" class="pointer">
+                                <li v-show="toggle" :style="{ 'background-color': action.color || bgColor }"
+                                    v-tooltip="{ content: action.tooltip, placement: tooltipPosition, classes: 'fab-tooltip', trigger: tooltipTrigger}"
+                                    @click="toParent(action.name)" class="pointer"
+                                    ref="actions">
                                     <i :class="[ actionIconSize ,'material-icons']">{{action.icon}}</i>
                                 </li>
                             </template>
@@ -72,7 +73,7 @@
 <script>
     import {mixin as clickaway} from 'vue-clickaway';
     import Ripple from 'vue-ripple-directive';
-    import { VTooltip } from 'v-tooltip'
+    import {VTooltip} from 'v-tooltip'
 
     export default {
         mixins: [clickaway],
@@ -111,6 +112,9 @@
             },
             mainTooltip: {
                 default: null
+            },
+            fixedTooltip: {
+                default: false
             },
             actions: {}
         },
@@ -197,13 +201,21 @@
                         leave: 'animated fadeOutDown'
                     };
                 }
+            },
+            tooltipTrigger() {
+
+                if (this.fixedTooltip) {
+                    return 'manual';
+                }
+
+                return 'hover';
             }
         },
         methods: {
             tooltipPos() {
-                if(this.position === 'top-right' || this.position === 'bottom-right') {
+                if (this.position === 'top-right' || this.position === 'bottom-right') {
                     this.tooltipPosition = 'left'
-                }  else {
+                } else {
                     this.tooltipPosition = 'right'
                 }
             },
@@ -247,6 +259,22 @@
                 } else {
                     wrapper.insertBefore(el, wrapper.childNodes[0]);
                 }
+            },
+            showTooltip(show) {
+                if (show && this.$refs.actions && this.fixedTooltip) {
+
+                    //timeout to prevent wrong position for the tooltip
+                    setTimeout(() => {
+                        this.$refs.actions.forEach((item) => {
+                            item._tooltip.show();
+                        });
+                    },600);
+
+                }else{
+                    this.$refs.actions.forEach((item) => {
+                        item._tooltip.hide();
+                    });
+                }
             }
         },
         watch: {
@@ -257,6 +285,9 @@
                     this.moveTransition();
                     this.tooltipPos();
                 });
+            },
+            toggle(val) {
+                this.showTooltip(val);
             }
         },
         mounted() {
@@ -282,7 +313,7 @@
         padding: 5px 10px 4px;
     }
 
-    .fab-tooltip.tooltip tooltip-arrow{
+    .fab-tooltip.tooltip tooltip-arrow {
         display: none;
     }
 

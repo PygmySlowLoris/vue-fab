@@ -44,6 +44,7 @@ And
 |  `main-icon`       | String    | <b>Default 'add'</b> <br>Use icons from the material icon library.  |
 |  `main-tooltip`       | String    | <b>Default `null`</b>  |
 |  `actions`            | Object    | <b>[Details bellow](https://github.com/PygmySlowLoris/vue-fab/#actions)</b>
+|  `fixed-tooltip`      | Boolean    | <b>Default 'false'</b><br> if true, it shows the tooltip beside the actions
 
 ### actions
 

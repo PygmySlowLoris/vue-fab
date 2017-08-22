@@ -27,7 +27,8 @@
                                     A Vue Component
                                     <span class="is-pulled-right">
                                         <!-- Place this tag where you want the button to render. -->
-<a class="github-button" href="https://github.com/PygmySlowLoris/vue-fab" data-icon="octicon-star" data-size="large" aria-label="Star PygmySlowLoris/vue-fab on GitHub">Star</a>
+<a class="github-button" href="https://github.com/PygmySlowLoris/vue-fab" data-icon="octicon-star" data-size="large"
+   aria-label="Star PygmySlowLoris/vue-fab on GitHub">Star</a>
                                     </span>
                                 </h2>
                             </div>
@@ -52,7 +53,7 @@
                             </div>
                             <div class="content">
                                 <div class="columns">
-                                    <div class="column is-5" style="display: flex; justify-content: center">
+                                    <div class="column is-4" style="display: flex; justify-content: center">
                                         <div class="field is-pulled-left">
                                             <label class="label">Color</label>
                                             <p class="control">
@@ -61,17 +62,52 @@
                                         </div>
                                     </div>
                                     <div class="column">
-                                        <div class="field has-text-left">
-                                            <label class="label">Position</label>
-                                            <p class="control">
-                                                <span class="select">
-                                                  <select v-model="position">
-                                                    <option v-for="pos in positions">{{pos}}</option>
-                                                  </select>
-                                                </span>
-                                            </p>
+                                        <div class="field is-horizontal">
+                                            <div class="field-body">
+                                                <div class="field has-text-left">
+                                                    <label class="label">Position</label>
+                                                    <p class="control is-expanded">
+                                                        <span class="select is-fullwidth">
+                                                          <select v-model="position">
+                                                            <option v-for="pos in positions">{{pos}}</option>
+                                                          </select>
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                <div class="field has-text-left">
+                                                    <label class="label">Position Type</label>
+                                                    <p class="control is-expandend">
+                                                        <span class="select is-fullwidth">
+                                                            <select v-model="positionType">
+                                                                <option v-for="type in positionTypes">{{type}}</option>
+                                                            </select>
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                <div class="field has-text-left">
+                                                    <label class="label">Size</label>
+                                                    <p class="control is-expandend">
+                                                        <span class="select is-fullwidth">
+                                                            <select v-model="iconSizes">
+                                                                <option v-for="size in sizes">{{size}}</option>
+                                                            </select>
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                <div class="field has-text-left">
+                                                    <label class="label">Tooltip event</label>
+                                                    <p class="control is-expandend">
+                                                        <span class="select is-fullwidth">
+                                                            <select v-model="tooltipEvent">
+                                                                <option v-for="type in tooltipEvents">{{type}}</option>
+                                                            </select>
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <label class="label" style="display: flex; align-items: center; padding-right: 1rem;">
+                                        <label class="label"
+                                               style="display: flex; align-items: center; padding-right: 1rem;">
                                             Main Icon & Tooltip
                                         </label>
                                         <div class="field is-horizontal">
@@ -88,7 +124,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <label class="label" style="display: flex; align-items: center; padding-right: 1rem;">
+                                        <label class="label"
+                                               style="display: flex; align-items: center; padding-right: 1rem;">
                                             First Icon & Tooltip
                                         </label>
                                         <div class="field is-horizontal">
@@ -105,7 +142,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <label class="label" style="display: flex; align-items: center; padding-right: 1rem;">
+                                        <label class="label"
+                                               style="display: flex; align-items: center; padding-right: 1rem;">
                                             Second Icon & Tooltip
                                         </label>
                                         <div class="field is-horizontal">
@@ -152,11 +190,14 @@
         </footer>
         <fab
                 :position="position"
+                :icon-size="iconSizes"
+                :position-type="positionType"
                 :bg-color="colors.hex"
                 :main-icon="mainIcon"
                 :main-tooltip="mainTooltip"
                 :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip, color:'#d11014'},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip}]"
                 @alertMe="alert"
+                :fixed-tooltip="fixedTooltip"
         ></fab>
     </div>
 </template>
@@ -207,7 +248,23 @@
                     'top-right',
                     'top-left',
                 ],
+                positionTypes: [
+                    'fixed',
+                    'absolute'
+                ],
+                tooltipEvents: [
+                    'hover',
+                    'fixed'
+                ],
+                sizes: [
+                    'small',
+                    'medium',
+                    'large'
+                ],
                 position: 'bottom-right',
+                positionType: 'fixed',
+                tooltipEvent: 'hover',
+                iconSizes: 'medium',
                 colors: defaultProps,
                 mainIcon: 'add',
                 mainTooltip: 'Hello',
@@ -215,6 +272,11 @@
                 firstTooltip: 'cached',
                 secondIcon: 'add_alert',
                 secondTooltip: 'add_alert'
+            }
+        },
+        computed: {
+            fixedTooltip() {
+                return this.tooltipEvent === 'fixed';
             }
         },
         methods: {
@@ -249,7 +311,6 @@
         margin: 1.5rem 0;
         border-top: dashed 1px;
     }
-
 
     li {
         display: inline-block;
@@ -292,7 +353,8 @@
     }
 
     .vertical-separator {
-        display: flex; justify-content: space-around;
+        display: flex;
+        justify-content: space-around;
     }
 
     .vertical-separator .line {

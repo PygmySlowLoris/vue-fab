@@ -13,7 +13,7 @@
                                 leave-active-class="animated quick zoomOut"
                         >
                             <template v-if="action.tooltip">
-                                <li v-show="toggle" :style="{ 'background-color': action.color || bgColor }"
+                                <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
                                     v-tooltip="{ content: action.tooltip, placement: tooltipPosition, classes: 'fab-tooltip', trigger: tooltipTrigger}"
                                     @click="toParent(action.name)" class="pointer"
                                     ref="actions">
@@ -266,14 +266,12 @@
                     //timeout to prevent wrong position for the tooltip
                     setTimeout(() => {
                         this.$refs.actions.forEach((item) => {
-                            item._tooltip.show();
+                            if(this.toggle) {
+                                item._tooltip.show();
+                            }
                         });
-                    },600);
+                    },700);
 
-                }else{
-                    this.$refs.actions.forEach((item) => {
-                        item._tooltip.hide();
-                    });
                 }
             }
         },

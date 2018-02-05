@@ -261,7 +261,7 @@
                 }
             },
             showTooltip(show) {
-                if (show && this.$refs.actions && this.fixedTooltip) {
+                if (show && this.actions.length && this.fixedTooltip) {
 
                     //timeout to prevent wrong position for the tooltip
                     setTimeout(() => {

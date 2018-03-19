@@ -116,7 +116,9 @@
             fixedTooltip: {
                 default: false
             },
-            actions: {}
+            actions: {
+                default: () => []
+            }
         },
         computed: {
             actionIconSize() {

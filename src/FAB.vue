@@ -33,7 +33,7 @@
         </div>
         <template v-if="rippleShow">
             <template v-if="mainTooltip">
-                <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
+                <div ref="main-tooltip-div" v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''"
                      v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip' }"
                      class="fab pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
@@ -42,7 +42,7 @@
                 </div>
             </template>
             <template v-else>
-                <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
+                <div ref="main-tooltip-div" v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''"
                      class="fab pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
                     <i :class="[ mainIconSize , { rotate: toggle }, 'material-icons main']">{{mainIcon}}</i>
@@ -112,6 +112,9 @@
             },
             mainTooltip: {
                 default: null
+            },
+            mainEventToggle: {
+                default: 'click'
             },
             fixedTooltip: {
                 default: false
@@ -275,6 +278,16 @@
                     },700);
 
                 }
+            },
+            addEventToMainTollTip() {
+                this.$refs['main-tooltip-div'].addEventListener(this.mainEventToggle,() => {
+                    this.toggle = this.mainEventToggle === 'click' ? !this.toggle : true;
+                });
+            },
+            removeEventToMainTollTip() {
+                this.$refs['main-tooltip-div'].removeEventListener(this.mainEventToggle,() => {
+                    this.toggle = this.mainEventToggle === 'click' ? !this.toggle : true;
+                });
             }
         },
         watch: {
@@ -292,9 +305,13 @@
         },
         mounted() {
             this.moveTransition();
+            this.addEventToMainTollTip();
         },
         created() {
             this.setPosition();
+        },
+        beforeDestroy() {
+            this.removeEventToMainTollTip();
         }
     }
 </script>

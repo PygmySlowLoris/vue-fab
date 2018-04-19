@@ -195,7 +195,7 @@
                 :bg-color="colors.hex"
                 :main-icon="mainIcon"
                 :main-tooltip="mainTooltip"
-                :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip, color:'#d11014'},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip}]"
+                :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip, color:'#d11014'},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip},{name: 'upload', 'icon-component': 'upload', tooltip: 'Upload'}]"
                 @alertMe="alert"
                 :fixed-tooltip="fixedTooltip"
         ></fab>
@@ -203,6 +203,20 @@
 </template>
 
 <script>
+    import Vue from 'vue';
+    import upload from '../src/upload';
+    Vue.component('upload', {
+      extends: upload,
+      methods: {
+        change: function (event) {
+          let name = [];
+          let files = event.target.files
+          for (var i = 0; i < files.length; i++)
+            name.push(files[i].name);
+          alert(name.join(', '));
+        }
+      }
+    });
     import FAB from '../src/FAB.vue';
     import {Chrome} from 'vue-color';
 

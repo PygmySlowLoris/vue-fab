@@ -17,13 +17,13 @@
                                     v-tooltip="{ content: action.tooltip, placement: tooltipPosition, classes: 'fab-tooltip', trigger: tooltipTrigger}"
                                     @click="toParent(action.name)" class="pointer"
                                     ref="actions">
-                                    <i :class="[ actionIconSize ,'material-icons']">{{action.icon}}</i>
+                                    <i-custom :class="[ actionIconSize ,'material-icons']" :action='action' />
                                 </li>
                             </template>
                             <template v-else>
                                 <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
                                     @click="toParent(action.name)" class="pointer">
-                                    <i :class="[ actionIconSize ,'material-icons']">{{action.icon}}</i>
+                                    <i-custom :class="[ actionIconSize ,'material-icons']" :action='action' />
                                 </li>
                             </template>
                         </transition>
@@ -76,6 +76,9 @@
     import {VTooltip} from 'v-tooltip'
 
     export default {
+        components: {
+          'i-custom': require('./icon').default
+        },
         mixins: [clickaway],
         directives: {Ripple, tooltip: VTooltip},
         data() {

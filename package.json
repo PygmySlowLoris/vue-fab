@@ -29,28 +29,39 @@
   },
   "homepage": "https://github.com/PygmySlowLoris/vue-fab#readme",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
-    "build": "cross-env NODE_ENV=production webpack --progress --hide-modules",
-    "prepublish": "npm run build"
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
   },
   "dependencies": {
     "v-tooltip": "2.0.0-beta.1",
-    "vue": "^2.2.1",
+    "vue": "^2.5.13",
     "vue-clickaway": "^2.1.0",
     "vue-ripple-directive": "^1.0.0"
   },
   "devDependencies": {
-    "babel-core": "^6.0.0",
-    "babel-loader": "^6.0.0",
-    "babel-preset-latest": "^6.0.0",
-    "cross-env": "^3.0.0",
-    "css-loader": "^0.25.0",
-    "file-loader": "^0.9.0",
-    "url-loader": "^0.5.8",
-    "vue-color": "^2.0.9",
-    "vue-loader": "^11.1.4",
-    "vue-template-compiler": "^2.2.1",
-    "webpack": "^2.2.0",
-    "webpack-dev-server": "^2.2.0"
-  }
+    "@vue/cli-plugin-babel": "^3.0.0-beta.6",
+    "@vue/cli-service": "^3.0.0-beta.6",
+    "coffee-loader": "^0.9.0",
+    "coffeescript": "^2.2.4",
+    "node-sass": "^4.8.3",
+    "sass-loader": "^7.0.1",
+    "vue-color": "^2.4.6",
+    "vue-template-compiler": "^2.5.13"
+  },
+  "babel": {
+    "presets": [
+      "@vue/app"
+    ]
+  },
+  "postcss": {
+    "plugins": {
+      "autoprefixer": {}
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 8"
+  ]
 }

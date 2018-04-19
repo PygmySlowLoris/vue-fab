@@ -52,6 +52,7 @@ And
 | :---------------      | :-------  | :---------        |
 |  `name`               | String    | Name of the event |
 |  `icon`               | String    | Icon name (Please refer to [Material icons](https://material.io/icons/))        |
+|  `icon-component`     | String    | Icon component name (e.g. extends file upload components with user-defined change method defined in src/upload.vue) |
 |  `tooltip`            | String    | If not used, tooltip won't appear.  |
 |  `color`              | String    | <b>Default `bg-color` value</b><br> Accepts all color formats: HEX, RGB & RGBA  |
 

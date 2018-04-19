@@ -44,6 +44,8 @@
     "@vue/cli-service": "^3.0.0-beta.6",
     "coffee-loader": "^0.9.0",
     "coffeescript": "^2.2.4",
+    "node-sass": "^4.8.3",
+    "sass-loader": "^7.0.1",
     "vue-color": "^2.4.6",
     "vue-template-compiler": "^2.5.13"
   },

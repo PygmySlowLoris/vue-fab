@@ -35,7 +35,7 @@
             <template v-if="mainTooltip">
                 <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
                      v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip' }"
-                     class="fab pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
+                     class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
                     <i :class="[ mainIconSize , { rotate: toggle } ,'material-icons main']">{{mainIcon}}</i>
                     <i :class="[ mainIconSize , { rotate: toggle } ,'material-icons close']">add</i>
@@ -43,7 +43,7 @@
             </template>
             <template v-else>
                 <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
-                     class="fab pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
+                     class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
                     <i :class="[ mainIconSize , { rotate: toggle }, 'material-icons main']">{{mainIcon}}</i>
                     <i :class="[ mainIconSize , { rotate: toggle }, 'material-icons close']">add</i>
@@ -53,14 +53,14 @@
         <template v-else>
             <template v-if="mainTooltip">
                 <div v-bind:v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip'}"
-                     class="fab pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
+                     class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
                     <i class="material-icons md-36 close" :class="{ rotate: toggle }">add</i>
                 </div>
             </template>
             <template v-else>
-                <div class="fab pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
+                <div class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
                     <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
                     <i class="material-icons md-36 close" :class="{ rotate: toggle }">add</i>
@@ -340,7 +340,7 @@
         z-index: 999;
     }
 
-    .fab {
+    .fab-main {
         border-radius: 100px;
         /*width: 65px;*/
         /*height: 65px;*/
@@ -354,7 +354,7 @@
         justify-content: center;
     }
 
-    .fab .material-icons {
+    .fab-main .material-icons {
         color: white;
         -webkit-transition: .4s all;
         -moz-transition: .4s all;
@@ -362,17 +362,17 @@
         margin: 0px auto;
     }
 
-    .fab .material-icons.main {
+    .fab-main .material-icons.main {
         opacity: 1;
         position: absolute;
     }
 
-    .fab .material-icons.close {
+    .fab-main .material-icons.close {
         opacity: 0;
         position: absolute;
     }
 
-    .fab .material-icons.main.rotate {
+    .fab-main .material-icons.main.rotate {
         -ms-transform: rotate(315deg); /* IE 9 */
         -webkit-transform: rotate(315deg); /* Chrome, Safari, Opera */
         transform: rotate(315deg);
@@ -381,7 +381,7 @@
         transition: opacity .3s ease-in, transform .4s;
     }
 
-    .fab .material-icons.close.rotate {
+    .fab-main .material-icons.close.rotate {
         -ms-transform: rotate(315deg); /* IE 9 */
         -webkit-transform: rotate(315deg); /* Chrome, Safari, Opera */
         transform: rotate(315deg);
@@ -480,13 +480,13 @@
             /*font-size: 24px !important;*/
         }
 
-        .fab {
+        .fab-main {
             /*width: 55px;*/
             /*height: 55px;*/
             /*padding: 1.5rem;*/
         }
 
-        .fab i {
+        .fab-main i {
             /*font-size: 34px !important;*/
         }
 

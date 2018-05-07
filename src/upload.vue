@@ -23,6 +23,7 @@ module.exports =
 
 label {
   cursor: inherit;
+  margin: 0;
   i {
     vertical-align: middle;
     font-size: inherit;

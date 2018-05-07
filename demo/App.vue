@@ -195,28 +195,21 @@
                 :bg-color="colors.hex"
                 :main-icon="mainIcon"
                 :main-tooltip="mainTooltip"
-                :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip, color:'#d11014'},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip},{name: 'upload', 'icon-component': 'upload', tooltip: 'Upload'}]"
+                :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip, color:'#d11014'},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip},{name: 'alertMe', icon: 'file_upload', tooltip: 'Upload'}]"
                 @alertMe="alert"
                 :fixed-tooltip="fixedTooltip"
-        ></fab>
+        >
+          <template slot='icon' slot-scope='{action}' v-if='action.tooltip == "Upload"'>
+            <upload :action='action' />
+          </template>
+        </fab>
     </div>
 </template>
 
 <script>
     import Vue from 'vue';
     import upload from '../src/upload';
-    Vue.component('upload', {
-      extends: upload,
-      methods: {
-        change: function (event) {
-          let name = [];
-          let files = event.target.files
-          for (var i = 0; i < files.length; i++)
-            name.push(files[i].name);
-          alert(name.join(', '));
-        }
-      }
-    });
+    Vue.component('upload', upload);
     import FAB from '../src/FAB.vue';
     import {Chrome} from 'vue-color';
 
@@ -294,8 +287,15 @@
             }
         },
         methods: {
-            alert(){
-                alert('You have clicked me :)');
+            alert(files){
+                if (files != null) {
+                    let name = [];
+                    for (var i = 0; i < files.length; i++)
+                        name.push(files[i].name);
+                    alert(name.join());
+                }
+                else
+                  alert('You have clicked me :)');
             }
         }
     }

@@ -1,7 +1,4 @@
-webpack = require 'webpack'
-
 module.exports =
-  compiler: true
   configureWebpack: (config) ->
     config.entry =
       app: [
@@ -9,5 +6,9 @@ module.exports =
         './demo/assets/logo.png'
       ]
     if process.env.NODE_ENV == 'production'
-      config.output.publicPath = './'
+      config.output.publicPath = ''
+    config.module.rules
+      .push
+        test: /\.coffee$/
+        use: [ 'babel-loader', 'coffee-loader' ]
     return

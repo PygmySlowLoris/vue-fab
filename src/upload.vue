@@ -6,7 +6,7 @@
 </template>
 
 <script lang='coffee'>
-module.exports =
+export default
   props: [ 'action' ]
   methods:
     change: (event) ->
@@ -46,5 +46,12 @@ label.md-36 {
   height: 36px;
   width: 36px;
   font-size: 36px;
+}
+
+i.md-36.material-icons {
+    left: 14px;
+    right: 14px;
+    top: 14px;
+    bottom: 14px;
 }
 </style>

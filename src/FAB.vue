@@ -37,16 +37,16 @@
                      v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip' }"
                      class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
-                    <i :class="[ mainIconSize , { rotate: toggle } ,'material-icons main']">{{mainIcon}}</i>
-                    <i :class="[ mainIconSize , { rotate: toggle } ,'material-icons close']">add</i>
+                    <i :class="[ mainIconSize , { rotate: toggle && allowRotation } ,'material-icons main']">{{mainIcon}}</i>
+                    <i :class="[ mainIconSize , { rotate: toggle && allowRotation } ,'material-icons close']">add</i>
                 </div>
             </template>
             <template v-else>
                 <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
                      class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
-                    <i :class="[ mainIconSize , { rotate: toggle }, 'material-icons main']">{{mainIcon}}</i>
-                    <i :class="[ mainIconSize , { rotate: toggle }, 'material-icons close']">add</i>
+                    <i :class="[ mainIconSize , { rotate: toggle && allowRotation }, 'material-icons main']">{{mainIcon}}</i>
+                    <i :class="[ mainIconSize , { rotate: toggle && allowRotation }, 'material-icons close']">add</i>
                 </div>
             </template>
         </template>
@@ -55,15 +55,15 @@
                 <div v-bind:v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip'}"
                      class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
-                    <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
-                    <i class="material-icons md-36 close" :class="{ rotate: toggle }">add</i>
+                    <i class="material-icons md-36 main" :class="{ rotate: toggle && allowRotation }">{{mainIcon}}</i>
+                    <i class="material-icons md-36 close" :class="{ rotate: toggle && allowRotation }">add</i>
                 </div>
             </template>
             <template v-else>
                 <div class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
-                    <i class="material-icons md-36 main" :class="{ rotate: toggle }">{{mainIcon}}</i>
-                    <i class="material-icons md-36 close" :class="{ rotate: toggle }">add</i>
+                    <i class="material-icons md-36 main" :class="{ rotate: toggle && allowRotation }">{{mainIcon}}</i>
+                    <i class="material-icons md-36 close" :class="{ rotate: toggle && allowRotation }">add</i>
                 </div>
             </template>
         </template>
@@ -116,9 +116,12 @@
             fixedTooltip: {
                 default: false
             },
+            enableRotation:{
+                default: true
+            },
             actions: {
                 default: () => []
-            }
+            }   
         },
         computed: {
             actionIconSize() {
@@ -135,6 +138,9 @@
                     default:
                         return 'md-24';
                 }
+            },
+            allowRotation(){
+                return this.enableRotation &&  this.actions && this.actions.length;
             },
             mainIconSize() {
                 switch (this.iconSize) {

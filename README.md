@@ -45,6 +45,7 @@ And
 |  `main-tooltip`       | String    | <b>Default `null`</b>  |
 |  `actions`            | Array    | <b>[Details bellow](https://github.com/PygmySlowLoris/vue-fab/#actions)</b>
 |  `fixed-tooltip`      | Boolean    | <b>Default 'false'</b><br> if true, it shows the tooltip beside the actions
+|  `enable-rotation`      | Boolean    | <b>Default 'true'</b><br> if true, the fab will rotate to indicate that it has been opened. Will not rotate if there are no actions specified.
 
 ### actions
 

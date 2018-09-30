@@ -33,7 +33,7 @@
         </div>
         <template v-if="rippleShow">
             <template v-if="mainTooltip">
-                <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
+                <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggleIt"
                      v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip' }"
                      class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
@@ -42,7 +42,7 @@
                 </div>
             </template>
             <template v-else>
-                <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
+                <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggleIt"
                      class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
                     <i :class="[ mainIconSize , { rotate: toggle }, 'material-icons main']">{{mainIcon}}</i>
@@ -117,7 +117,12 @@
                 default: false
             },
             actions: {
+                type: Array,
                 default: () => []
+            },
+            enableRotation: {
+                type: Boolean,
+                default: true
             }
         },
         computed: {
@@ -275,6 +280,22 @@
                     },700);
 
                 }
+            },
+            toggleIt() {
+                if (!this.enableRotation) {
+                    return;
+                }
+
+                this.toggle = !this.toggle;
+                
+                if (this.actions.length) {
+                    return;
+                }
+                
+                setTimeout(() => {
+                    this.toggle = !this.toggle;
+                },200);
+                
             }
         },
         watch: {

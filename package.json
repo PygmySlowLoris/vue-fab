@@ -1,6 +1,6 @@
 {
   "name": "vue-fab",
-  "version": "2.1.4",
+  "version": "2.2.0",
   "description": "Vue Floating Action Button",
   "main": "src/index.js",
   "repository": {

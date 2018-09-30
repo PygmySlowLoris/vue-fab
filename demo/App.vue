@@ -160,6 +160,10 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <label class="checkbox" style="display: flex; align-items: center; padding-right: 1rem;">
+                                            <input type="checkbox" v-model="enableRotation">
+                                            Enable Rotation
+                                        </label>
                                     </div>
                                 </div>
                                 <div class="columns">
@@ -198,6 +202,7 @@
                 :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip, color:'#d11014'},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip}]"
                 @alertMe="alert"
                 :fixed-tooltip="fixedTooltip"
+                :enable-rotation="enableRotation"
         ></fab>
     </div>
 </template>
@@ -271,7 +276,8 @@
                 firstIcon: 'cached',
                 firstTooltip: 'cached',
                 secondIcon: 'add_alert',
-                secondTooltip: 'add_alert'
+                secondTooltip: 'add_alert',
+                enableRotation: true
             }
         },
         computed: {

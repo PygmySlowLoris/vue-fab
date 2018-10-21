@@ -80,7 +80,7 @@
         directives: {Ripple, tooltip: VTooltip},
         data() {
             return {
-                toggle: false,
+                toggle: this.startOpened,
                 pos: {},
                 tooltipPosition: 'left'
             }
@@ -121,7 +121,13 @@
             },
             actions: {
                 default: () => []
-            }   
+            },
+            startOpened: {
+                default: false
+            },
+            toggleWhenAway: {
+                default: true
+            },
         },
         computed: {
             actionIconSize() {
@@ -232,7 +238,9 @@
                 this.toggle = false;
             },
             away() {
-                this.toggle = false;
+                if(this.toggleWhenAway) {
+                    this.toggle = false;
+                }
             },
             setPosition() {
                 this.pos = {};

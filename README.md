@@ -46,6 +46,8 @@ And
 |  `actions`            | Array    | <b>[Details bellow](https://github.com/PygmySlowLoris/vue-fab/#actions)</b>
 |  `fixed-tooltip`      | Boolean    | <b>Default 'false'</b><br> if true, it shows the tooltip beside the actions
 |  `enable-rotation`      | Boolean    | <b>Default 'true'</b><br> if true, the fab will rotate to indicate that it has been opened. Will not rotate if there are no actions specified.
+|  `start-opened`      | Boolean    | <b>Default 'false'</b><br> if true, the fab will start opened.
+|  `toggle-when-away`      | Boolean    | <b>Default 'true'</b><br> if false, the fab will not be closed when clicking outside from the fab component.
 
 ### actions
 

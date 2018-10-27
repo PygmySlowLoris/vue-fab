@@ -11,6 +11,7 @@
                         <transition
                                 enter-active-class="animated quick zoomIn"
                                 leave-active-class="animated quick zoomOut"
+                                v-on:after-enter="afterActionsTransitionEnter"
                         >
                             <template v-if="action.tooltip">
                                 <li v-if="toggle" :style="{ 'background-color': action.color || bgColor }"
@@ -115,6 +116,9 @@
             },
             fixedTooltip: {
                 default: false
+            },
+            tooltipTimeOutWhenStartOpened: {
+                default: 200
             },
             enableRotation:{
                 default: true
@@ -276,19 +280,19 @@
                     wrapper.insertBefore(el, wrapper.childNodes[0]);
                 }
             },
-            showTooltip(show) {
-                if (show && this.actions.length && this.fixedTooltip) {
-
-                    //timeout to prevent wrong position for the tooltip
-                    setTimeout(() => {
-                        this.$refs.actions.forEach((item) => {
-                            if(this.toggle) {
-                                item._tooltip.show();
-                            }
-                        });
-                    },700);
-
+            showTooltip(timeOut = 0) {
+                if (this.toggle && this.actions.length && this.fixedTooltip) {
+                  setTimeout(() => {
+                    this.$refs.actions.forEach((item) => {
+                      if(this.toggle) {
+                        item._tooltip.show();
+                      }
+                    });
+                  },timeOut);
                 }
+            },
+            afterActionsTransitionEnter() {
+                this.showTooltip();
             }
         },
         watch: {
@@ -299,9 +303,6 @@
                     this.moveTransition();
                     this.tooltipPos();
                 });
-            },
-            toggle(val) {
-                this.showTooltip(val);
             }
         },
         mounted() {
@@ -309,6 +310,10 @@
         },
         created() {
             this.setPosition();
+
+            if (this.startOpened) {
+                this.showTooltip(this.tooltipTimeOutWhenStartOpened);
+            }
         }
     }
 </script>

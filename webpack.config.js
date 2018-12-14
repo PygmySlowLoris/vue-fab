@@ -1,5 +1,7 @@
-var path = require('path')
-var webpack = require('webpack')
+const path = require('path');
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
+const webpack = require('webpack');
 
 module.exports = {
   entry: './demo/main.js',
@@ -20,6 +22,10 @@ module.exports = {
         }
       },
       {
+        test: /\.css$/,
+        loader: 'css-loader'
+      },
+      {
         test: /\.js$/,
         loader: 'babel-loader',
         exclude: /node_modules/
@@ -38,6 +44,23 @@ module.exports = {
       'vue$': 'vue/dist/vue.esm.js'
     }
   },
+  optimization: {
+    minimizer: [
+      new UglifyJsPlugin({
+        sourceMap: true,
+        parallel: 4,
+        uglifyOptions: {
+          warnings: false,
+          compress: {
+            warnings: false
+          },
+        },
+      })
+    ]
+  },
+  plugins: [
+    new VueLoaderPlugin()
+  ],
   devServer: {
     historyApiFallback: true,
     noInfo: true
@@ -55,12 +78,6 @@ if (process.env.NODE_ENV === 'production') {
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: '"production"'
-      }
-    }),
-    new webpack.optimize.UglifyJsPlugin({
-      sourceMap: true,
-      compress: {
-        warnings: false
       }
     }),
     new webpack.LoaderOptionsPlugin({

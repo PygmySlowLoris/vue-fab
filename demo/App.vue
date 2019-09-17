@@ -279,7 +279,7 @@
                 position: 'bottom-right',
                 positionType: 'fixed',
                 revertDirection: false,
-                autoReverse: false,
+                autoReverse: true,
                 tooltipEvent: 'hover',
                 iconSizes: 'medium',
                 colors: defaultProps,

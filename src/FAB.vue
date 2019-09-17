@@ -206,7 +206,7 @@
                         return '64px';
                 }
             },
-            topListPadding() {
+            listPadding() {
                 switch (this.iconSize) {
                     case 'small':
                         return '58px';
@@ -221,34 +221,18 @@
                         return '74px';
                 }
             },
-            bottomListPadding() {
-                // mainIconSize + (paddingAmount) / 2 + 20
-                switch (this.iconSize) {
-                    case 'small':
-                        return '48px';
-                        break;
-                    case 'medium':
-                        return '52px';
-                        break;
-                    case 'large':
-                        return '58px';
-                        break;
-                    default:
-                        return '52px';
-                }
-            },
             listPos() {
                 if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
-                        top: this.allowRevertDirection ? 'unset' : this.topListPadding,
-                        bottom: this.allowRevertDirection ? this.topListPadding : 'unset',
+                        top: this.allowRevertDirection ? 'unset' : this.listPadding,
+                        bottom: this.allowRevertDirection ? this.listPadding : 'unset',
                         position: this.allowRevertDirection ? 'absolute' : 'absolute',
                         width: this.listSize,
                     }
                 }
                 return {
-                    bottom: this.allowRevertDirection ? 'unset' : this.topListPadding,
-                    top: this.allowRevertDirection ? this.topListPadding : 'unset',
+                    bottom: this.allowRevertDirection ? 'unset' : this.listPadding,
+                    top: this.allowRevertDirection ? this.listPadding : 'unset',
                     position: this.allowRevertDirection ? 'absolute' : 'absolute',
                     width: this.listSize
                 }
@@ -382,7 +366,7 @@
                 });
             },
             autoReverse(val, oldVal){
-                if (val !== oldVal && !val) {
+                if (val !== oldVal) {
                     if (val) window.addEventListener('scroll', this.handleScroll);
                     else window.removeEventListener('scroll', this.handleScroll);
                 }
@@ -515,7 +499,6 @@
         align-items: center;
         border-radius: 100px;
         box-shadow: 0 10px 10px rgba(0, 0, 0, 0.20), 0 4px 4px rgba(0, 0, 0, 0.15);
-        z-index: 15;
     }
 
     .fab-list li .material-icons {
@@ -530,7 +513,6 @@
     ul {
         list-style-type: none;
         padding: 0 !important;
-        z-index: 10;
     }
 
     .fab-wrapper .actions-container {

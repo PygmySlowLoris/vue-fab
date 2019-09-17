@@ -164,6 +164,10 @@
                                             <input type="checkbox" v-model="enableRotation">
                                             Enable Rotation
                                         </label>
+                                        <label class="checkbox" style="display: flex; align-items: center; padding-right: 1rem;">
+                                            <input type="checkbox" v-model="revertDirection">
+                                            Revert Direction
+                                        </label>
                                     </div>
                                 </div>
                                 <div class="columns">
@@ -196,6 +200,7 @@
                 :position="position"
                 :icon-size="iconSizes"
                 :position-type="positionType"
+                :revert-direction="revertDirection"
                 :bg-color="colors.hex"
                 :main-icon="mainIcon"
                 :main-tooltip="mainTooltip"
@@ -268,6 +273,7 @@
                 ],
                 position: 'bottom-right',
                 positionType: 'fixed',
+                revertDirection: false,
                 tooltipEvent: 'hover',
                 iconSizes: 'medium',
                 colors: defaultProps,

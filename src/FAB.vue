@@ -83,7 +83,7 @@
             return {
                 toggle: this.startOpened,
                 pos: {},
-                tooltipPosition: 'left'
+                tooltipPosition: 'left',
             }
         },
         props: {
@@ -95,6 +95,9 @@
             },
             positionType: {
                 default: 'fixed',
+            },
+            revertDirection: {
+                default: false,
             },
             zIndex: {
                 default: '999',
@@ -182,16 +185,52 @@
                         return '32px';
                 }
             },
+            listSize() {
+                switch (this.iconSize) {
+                    case 'small':
+                        return '56px';
+                        break;
+                    case 'medium':
+                        return '64px';
+                        break;
+                    case 'large':
+                        return '86px';
+                        break;
+                    default:
+                        return '64px';
+                }
+            },
+            listPadding() {
+                switch (this.iconSize) {
+                    case 'small':
+                        return '72px';
+                        break;
+                    case 'medium':
+                        return '88px';
+                        break;
+                    case 'large':
+                        return '106px';
+                        break;
+                    default:
+                        return '88px';
+                }
+            },
             listPos() {
                 if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
-                        top: '-20px',
-                        paddingTop: '20px'
+                        top: this.revertDirection ? 'unset' : '-20px',
+                        bottom: this.revertDirection ? this.listPadding : 'unset',
+                        paddingTop: '20px',
+                        position: this.revertDirection ? 'absolute' : 'relative',
+                        width: this.listSize,
                     }
                 }
                 return {
-                    bottom: '-20px',
-                    paddingBottom: '20px'
+                    bottom: this.revertDirection ? 'unset' : '-20px',
+                    top: this.revertDirection ? '40px' : 'unset',
+                    paddingBottom: '20px',
+                    position: this.revertDirection ? 'absolute' : 'relative',
+                    width: this.listSize
                 }
             },
             transitionEnter() {
@@ -205,18 +244,18 @@
             animation() {
                 if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
-                        enter: 'animated quick fadeInDown',
-                        leave: 'animated quick fadeOutUp'
+                        enter: this.revertDirection ? 'animated quick fadeInUp' : 'animated quick fadeInDown',
+                        leave: this.revertDirection ? 'animated quick fadeOutDown' : 'animated quick fadeOutUp'
                     };
                 } else if (this.position === 'bottom-right' || this.position === 'bottom-left') {
                     return {
-                        enter: 'animated quick fadeInUp',
-                        leave: 'animated quick fadeOutDown'
+                        enter: this.revertDirection ? 'animated quick fadeInDown' : 'animated quick fadeInUp',
+                        leave: this.revertDirection ? 'animated quick fadeOutUp' : 'animated quick fadeOutDown'
                     };
                 } else {
                     return {
-                        enter: 'animated fadeInUp',
-                        leave: 'animated fadeOutDown'
+                        enter: this.revertDirection ? 'animated fadeInDown' : 'animated fadeInUp',
+                        leave: this.revertDirection ? 'animated fadeOutUp' : 'animated fadeOutDown'
                     };
                 }
             },
@@ -447,6 +486,9 @@
         overflow: hidden;
         z-index: 0;
         position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* Rules for sizing the icon. */

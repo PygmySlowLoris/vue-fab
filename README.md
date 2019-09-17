@@ -37,6 +37,7 @@ And
 |  `bg-color`           | String    | <b>Default '#333333'</b><br> Accepts all color formats: HEX, RGB & RGBA |
 |  `position`           | String    | <b>Default 'bottom-left'</b> <br>Options: 'bottom-left', 'bottom-right', 'top-left','top-right'  |
 |  `position-type`           | String    | <b>Default 'fixed'</b> <br>Options: 'fixed' or 'absolute'|
+|  `revert-direction`           | Boolean    | <b>Default false'</b> <br> if true the direction of list will be reverted |
 |  `z-index`            | String    | <b>Default '999'</b> <br>Set any value that suits your needs.  |
 |  `ripple-show`        | Boolean   | <b>Default true</b> <br>Options: true or false.  |
 |  `ripple-color`       | String    | <b>Default 'light'</b> <br>Options: 'light' or 'dark'.  |

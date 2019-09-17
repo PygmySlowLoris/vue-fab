@@ -139,7 +139,7 @@
                 default: true
             },
             autoReverse: {
-                default: false,
+                default: true,
             }
         },
         computed: {

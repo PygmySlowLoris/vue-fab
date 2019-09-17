@@ -1,6 +1,7 @@
 <template>
     <div :id="position + '-wrapper'" class="fab-wrapper" v-on-clickaway="away"
-         :style="[ pos, {zIndex: zIndex}, {position: positionType} ]">
+         :style="[ pos, {zIndex: zIndex}, {position: positionType} ]"
+         :ref="fabWrapper">
         <div :id="position + '-action'" class="actions-container" :style="listPos">
             <transition name="fab-actions-appear"
                         :enter-active-class="transitionEnter"
@@ -84,6 +85,8 @@
                 toggle: this.startOpened,
                 pos: {},
                 tooltipPosition: 'left',
+                hasReachedEnd: false,
+                fabWrapper: 'fabWrapper'
             }
         },
         props: {
@@ -135,6 +138,9 @@
             toggleWhenAway: {
                 default: true
             },
+            autoReverse: {
+                default: false,
+            }
         },
         computed: {
             actionIconSize() {
@@ -200,36 +206,50 @@
                         return '64px';
                 }
             },
-            listPadding() {
+            topListPadding() {
                 switch (this.iconSize) {
                     case 'small':
-                        return '72px';
+                        return '58px';
                         break;
                     case 'medium':
-                        return '88px';
+                        return '74px';
                         break;
                     case 'large':
-                        return '106px';
+                        return '92px';
                         break;
                     default:
-                        return '88px';
+                        return '74px';
+                }
+            },
+            bottomListPadding() {
+                // mainIconSize + (paddingAmount) / 2 + 20
+                switch (this.iconSize) {
+                    case 'small':
+                        return '48px';
+                        break;
+                    case 'medium':
+                        return '52px';
+                        break;
+                    case 'large':
+                        return '58px';
+                        break;
+                    default:
+                        return '52px';
                 }
             },
             listPos() {
                 if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
-                        top: this.revertDirection ? 'unset' : '-20px',
-                        bottom: this.revertDirection ? this.listPadding : 'unset',
-                        paddingTop: '20px',
-                        position: this.revertDirection ? 'absolute' : 'relative',
+                        top: this.allowRevertDirection ? 'unset' : this.topListPadding,
+                        bottom: this.allowRevertDirection ? this.topListPadding : 'unset',
+                        position: this.allowRevertDirection ? 'absolute' : 'absolute',
                         width: this.listSize,
                     }
                 }
                 return {
-                    bottom: this.revertDirection ? 'unset' : '-20px',
-                    top: this.revertDirection ? '40px' : 'unset',
-                    paddingBottom: '20px',
-                    position: this.revertDirection ? 'absolute' : 'relative',
+                    bottom: this.allowRevertDirection ? 'unset' : this.topListPadding,
+                    top: this.allowRevertDirection ? this.topListPadding : 'unset',
+                    position: this.allowRevertDirection ? 'absolute' : 'absolute',
                     width: this.listSize
                 }
             },
@@ -244,18 +264,18 @@
             animation() {
                 if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
-                        enter: this.revertDirection ? 'animated quick fadeInUp' : 'animated quick fadeInDown',
-                        leave: this.revertDirection ? 'animated quick fadeOutDown' : 'animated quick fadeOutUp'
+                        enter: this.allowRevertDirection ? 'animated quick fadeInUp' : 'animated quick fadeInDown',
+                        leave: this.allowRevertDirection ? 'animated quick fadeOutDown' : 'animated quick fadeOutUp'
                     };
                 } else if (this.position === 'bottom-right' || this.position === 'bottom-left') {
                     return {
-                        enter: this.revertDirection ? 'animated quick fadeInDown' : 'animated quick fadeInUp',
-                        leave: this.revertDirection ? 'animated quick fadeOutUp' : 'animated quick fadeOutDown'
+                        enter: this.allowRevertDirection ? 'animated quick fadeInDown' : 'animated quick fadeInUp',
+                        leave: this.allowRevertDirection ? 'animated quick fadeOutUp' : 'animated quick fadeOutDown'
                     };
                 } else {
                     return {
-                        enter: this.revertDirection ? 'animated fadeInDown' : 'animated fadeInUp',
-                        leave: this.revertDirection ? 'animated fadeOutUp' : 'animated fadeOutDown'
+                        enter: this.allowRevertDirection ? 'animated fadeInDown' : 'animated fadeInUp',
+                        leave: this.allowRevertDirection ? 'animated fadeOutUp' : 'animated fadeOutDown'
                     };
                 }
             },
@@ -266,6 +286,10 @@
                 }
 
                 return 'hover';
+            },
+            allowRevertDirection() {
+                return this.revertDirection ||
+                 (this.positionType === 'absolute' && this.autoReverse && this.hasReachedEnd);
             }
         },
         methods: {
@@ -332,6 +356,20 @@
             },
             afterActionsTransitionEnter() {
                 this.showTooltip();
+            },
+            setHasReachedEnd(hasReachedEnd) {
+                if (this.hasReachedEnd !== hasReachedEnd) {
+                    this.hasReachedEnd = hasReachedEnd;
+                }
+            },
+            handleScroll(event) {
+                const bounding = this.$refs.fabWrapper.getBoundingClientRect();
+                if (this.position === 'top-right' || this.position === 'top-left') {
+                    const limit = (window.innerHeight || document.documentElement.clientHeight) - 180;
+                    this.setHasReachedEnd(bounding.top >= limit);
+                } else {
+                    this.setHasReachedEnd(bounding.bottom <= 200);
+                }
             }
         },
         watch: {
@@ -342,6 +380,12 @@
                     this.moveTransition();
                     this.tooltipPos();
                 });
+            },
+            autoReverse(val, oldVal){
+                if (val !== oldVal && !val) {
+                    if (val) window.addEventListener('scroll', this.handleScroll);
+                    else window.removeEventListener('scroll', this.handleScroll);
+                }
             }
         },
         mounted() {
@@ -349,10 +393,14 @@
         },
         created() {
             this.setPosition();
+            if (this.autoReverse) window.addEventListener('scroll', this.handleScroll);
 
             if (this.startOpened) {
                 this.showTooltip(this.tooltipTimeOutWhenStartOpened);
             }
+        },
+        destroyed() {
+            if (this.autoReverse) window.removeEventListener('scroll', this.handleScroll);
         }
     }
 </script>
@@ -461,11 +509,13 @@
         /*width: 50px;*/
         /*height: 50px;*/
         padding: 10px;
-        margin-top: 2vh;
+        margin-top: 1vh;
+        margin-bottom: 1vh;
         display: flex;
         align-items: center;
         border-radius: 100px;
         box-shadow: 0 10px 10px rgba(0, 0, 0, 0.20), 0 4px 4px rgba(0, 0, 0, 0.15);
+        z-index: 15;
     }
 
     .fab-list li .material-icons {
@@ -480,10 +530,10 @@
     ul {
         list-style-type: none;
         padding: 0 !important;
+        z-index: 10;
     }
 
     .fab-wrapper .actions-container {
-        overflow: hidden;
         z-index: 0;
         position: relative;
         display: flex;

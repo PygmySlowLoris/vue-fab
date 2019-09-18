@@ -1,6 +1,7 @@
 <template>
     <div :id="position + '-wrapper'" class="fab-wrapper" v-on-clickaway="away"
-         :style="[ pos, {zIndex: zIndex}, {position: positionType} ]">
+         :style="[ pos, {zIndex: zIndex}, {position: positionType} ]"
+         :ref="fabWrapper">
         <div :id="position + '-action'" class="actions-container" :style="listPos">
             <transition name="fab-actions-appear"
                         :enter-active-class="transitionEnter"
@@ -83,7 +84,9 @@
             return {
                 toggle: this.startOpened,
                 pos: {},
-                tooltipPosition: 'left'
+                tooltipPosition: 'left',
+                hasReachedEnd: false,
+                fabWrapper: 'fabWrapper'
             }
         },
         props: {
@@ -95,6 +98,9 @@
             },
             positionType: {
                 default: 'fixed',
+            },
+            revertDirection: {
+                default: false,
             },
             zIndex: {
                 default: '999',
@@ -132,6 +138,9 @@
             toggleWhenAway: {
                 default: true
             },
+            autoReverse: {
+                default: true,
+            }
         },
         computed: {
             actionIconSize() {
@@ -182,16 +191,50 @@
                         return '32px';
                 }
             },
+            listSize() {
+                switch (this.iconSize) {
+                    case 'small':
+                        return '56px';
+                        break;
+                    case 'medium':
+                        return '64px';
+                        break;
+                    case 'large':
+                        return '86px';
+                        break;
+                    default:
+                        return '64px';
+                }
+            },
+            listPadding() {
+                switch (this.iconSize) {
+                    case 'small':
+                        return '58px';
+                        break;
+                    case 'medium':
+                        return '74px';
+                        break;
+                    case 'large':
+                        return '92px';
+                        break;
+                    default:
+                        return '74px';
+                }
+            },
             listPos() {
                 if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
-                        top: '-20px',
-                        paddingTop: '20px'
+                        top: this.allowRevertDirection ? 'unset' : this.listPadding,
+                        bottom: this.allowRevertDirection ? this.listPadding : 'unset',
+                        position: this.allowRevertDirection ? 'absolute' : 'absolute',
+                        width: this.listSize,
                     }
                 }
                 return {
-                    bottom: '-20px',
-                    paddingBottom: '20px'
+                    bottom: this.allowRevertDirection ? 'unset' : this.listPadding,
+                    top: this.allowRevertDirection ? this.listPadding : 'unset',
+                    position: this.allowRevertDirection ? 'absolute' : 'absolute',
+                    width: this.listSize
                 }
             },
             transitionEnter() {
@@ -205,18 +248,18 @@
             animation() {
                 if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
-                        enter: 'animated quick fadeInDown',
-                        leave: 'animated quick fadeOutUp'
+                        enter: this.allowRevertDirection ? 'animated quick fadeInUp' : 'animated quick fadeInDown',
+                        leave: this.allowRevertDirection ? 'animated quick fadeOutDown' : 'animated quick fadeOutUp'
                     };
                 } else if (this.position === 'bottom-right' || this.position === 'bottom-left') {
                     return {
-                        enter: 'animated quick fadeInUp',
-                        leave: 'animated quick fadeOutDown'
+                        enter: this.allowRevertDirection ? 'animated quick fadeInDown' : 'animated quick fadeInUp',
+                        leave: this.allowRevertDirection ? 'animated quick fadeOutUp' : 'animated quick fadeOutDown'
                     };
                 } else {
                     return {
-                        enter: 'animated fadeInUp',
-                        leave: 'animated fadeOutDown'
+                        enter: this.allowRevertDirection ? 'animated fadeInDown' : 'animated fadeInUp',
+                        leave: this.allowRevertDirection ? 'animated fadeOutUp' : 'animated fadeOutDown'
                     };
                 }
             },
@@ -227,6 +270,10 @@
                 }
 
                 return 'hover';
+            },
+            allowRevertDirection() {
+                return this.revertDirection ||
+                 (this.positionType === 'absolute' && this.autoReverse && this.hasReachedEnd);
             }
         },
         methods: {
@@ -293,6 +340,20 @@
             },
             afterActionsTransitionEnter() {
                 this.showTooltip();
+            },
+            setHasReachedEnd(hasReachedEnd) {
+                if (this.hasReachedEnd !== hasReachedEnd) {
+                    this.hasReachedEnd = hasReachedEnd;
+                }
+            },
+            handleScroll(event) {
+                const bounding = this.$refs.fabWrapper.getBoundingClientRect();
+                if (this.position === 'top-right' || this.position === 'top-left') {
+                    const limit = (window.innerHeight || document.documentElement.clientHeight) - 180;
+                    this.setHasReachedEnd(bounding.top >= limit);
+                } else {
+                    this.setHasReachedEnd(bounding.bottom <= 200);
+                }
             }
         },
         watch: {
@@ -303,6 +364,12 @@
                     this.moveTransition();
                     this.tooltipPos();
                 });
+            },
+            autoReverse(val, oldVal){
+                if (val !== oldVal) {
+                    if (val) window.addEventListener('scroll', this.handleScroll);
+                    else window.removeEventListener('scroll', this.handleScroll);
+                }
             }
         },
         mounted() {
@@ -310,10 +377,14 @@
         },
         created() {
             this.setPosition();
+            if (this.autoReverse) window.addEventListener('scroll', this.handleScroll);
 
             if (this.startOpened) {
                 this.showTooltip(this.tooltipTimeOutWhenStartOpened);
             }
+        },
+        destroyed() {
+            if (this.autoReverse) window.removeEventListener('scroll', this.handleScroll);
         }
     }
 </script>
@@ -422,7 +493,8 @@
         /*width: 50px;*/
         /*height: 50px;*/
         padding: 10px;
-        margin-top: 2vh;
+        margin-top: 1vh;
+        margin-bottom: 1vh;
         display: flex;
         align-items: center;
         border-radius: 100px;
@@ -444,9 +516,11 @@
     }
 
     .fab-wrapper .actions-container {
-        overflow: hidden;
         z-index: 0;
         position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* Rules for sizing the icon. */

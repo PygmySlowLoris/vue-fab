@@ -58,6 +58,8 @@ And
 |  `tooltip`            | String    | If not used, tooltip won't appear.  |
 |  `color`              | String    | <b>Default `bg-color` value</b><br> Accepts all color formats: HEX, RGB & RGBA  |
 
+When no action is passed, or an empty array, you can specify a `@action` binding to execute a single action on click.
+
 ##  Examples
 
 Include the component in your .vue file, `actions` prop is required for the component to work. The `@event` has to match the name given in the `actions` prop. 

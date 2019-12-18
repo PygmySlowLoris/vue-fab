@@ -160,9 +160,15 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <label class="checkbox" style="display: flex; align-items: center; padding-right: 1rem;">
+                                        <label class="checkbox"
+                                               style="display: flex; align-items: center; padding-right: 1rem;">
                                             <input type="checkbox" v-model="enableRotation">
                                             Enable Rotation
+                                        </label>
+                                        <label class="checkbox"
+                                               style="display: flex; align-items: center; padding-right: 1rem;">
+                                            <input type="checkbox" v-model="enableSingleAction">
+                                            Enable single action
                                         </label>
                                     </div>
                                 </div>
@@ -199,20 +205,21 @@
                 :bg-color="colors.hex"
                 :main-icon="mainIcon"
                 :main-tooltip="mainTooltip"
-                :actions="[{name: 'alertMe',icon: firstIcon, tooltip: firstTooltip, color:'#d11014'},{name: 'alertMe',icon: secondIcon, tooltip: secondTooltip}]"
+                :actions="actions"
                 @alertMe="alert"
                 :fixed-tooltip="fixedTooltip"
                 :enable-rotation="enableRotation"
+                @action="alert"
         ></fab>
     </div>
 </template>
 
 <script>
-    import FAB from '../src/FAB.vue';
-    import {Chrome} from 'vue-color';
+    import FAB from '../src/FAB.vue'
+    import {Chrome} from 'vue-color'
 
-    const teamUrl = 'https://github.com/PygmySlowLoris';
-    const repoUrl = 'https://github.com/PygmySlowLoris/vue-fab';
+    const teamUrl = 'https://github.com/PygmySlowLoris'
+    const repoUrl = 'https://github.com/PygmySlowLoris/vue-fab'
 
     const defaultProps = {
         hex: '#194d33',
@@ -235,7 +242,7 @@
             a: 1
         },
         a: 1
-    };
+    }
 
     export default {
         name: 'app',
@@ -243,7 +250,7 @@
             fab: FAB,
             'chrome-picker': Chrome
         },
-        data(){
+        data() {
             return {
                 repoUrl: repoUrl,
                 teamUrl: teamUrl,
@@ -277,17 +284,27 @@
                 firstTooltip: 'cached',
                 secondIcon: 'add_alert',
                 secondTooltip: 'add_alert',
-                enableRotation: true
+                enableRotation: true,
+                enableSingleAction: false,
             }
         },
         computed: {
             fixedTooltip() {
-                return this.tooltipEvent === 'fixed';
+                return this.tooltipEvent === 'fixed'
+            },
+            actions() {
+                if (this.enableSingleAction) {
+                    return []
+                }
+                return [
+                    {name: 'alertMe', icon: this.firstIcon, tooltip: this.firstTooltip, color: '#d11014'},
+                    {name: 'alertMe', icon: this.secondIcon, tooltip: this.secondTooltip}
+                ]
             }
         },
         methods: {
-            alert(){
-                alert('You have clicked me :)');
+            alert() {
+                alert('You have clicked me :)')
             }
         }
     }

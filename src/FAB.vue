@@ -34,7 +34,7 @@
         </div>
         <template v-if="rippleShow">
             <template v-if="mainTooltip">
-                <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
+                <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggleOrAction"
                      v-tooltip="{ content: mainTooltip, placement: tooltipPosition, classes: 'fab-tooltip' }"
                      class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
@@ -43,7 +43,7 @@
                 </div>
             </template>
             <template v-else>
-                <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggle = !toggle"
+                <div v-ripple="rippleColor == 'light' ? 'rgba(255, 255, 255, 0.35)' : ''" @click="toggleOrAction"
                      class="fab-main pointer" :style="{ 'background-color': bgColor, 'padding': paddingAmount }"
                 >
                     <i :class="[ mainIconSize , { rotate: toggle && allowRotation }, 'material-icons main']">{{mainIcon}}</i>
@@ -72,8 +72,8 @@
 </template>
 
 <script>
-    import {mixin as clickaway} from 'vue-clickaway';
-    import Ripple from 'vue-ripple-directive';
+    import {mixin as clickaway} from 'vue-clickaway'
+    import Ripple from 'vue-ripple-directive'
     import {VTooltip} from 'v-tooltip'
 
     export default {
@@ -120,7 +120,7 @@
             tooltipTimeOutWhenStartOpened: {
                 default: 200
             },
-            enableRotation:{
+            enableRotation: {
                 default: true
             },
             actions: {
@@ -137,49 +137,40 @@
             actionIconSize() {
                 switch (this.iconSize) {
                     case 'small':
-                        return 'md-18';
-                        break;
+                        return 'md-18'
                     case 'medium':
-                        return 'md-24';
-                        break;
+                        return 'md-24'
                     case 'large':
-                        return 'md-36';
-                        break;
+                        return 'md-36'
                     default:
-                        return 'md-24';
+                        return 'md-24'
                 }
             },
-            allowRotation(){
-                return this.enableRotation &&  this.actions && this.actions.length;
+            allowRotation() {
+                return this.enableRotation && this.actions && this.actions.length
             },
             mainIconSize() {
                 switch (this.iconSize) {
                     case 'small':
-                        return 'md-24';
-                        break;
+                        return 'md-24'
                     case 'medium':
-                        return 'md-36';
-                        break;
+                        return 'md-36'
                     case 'large':
-                        return 'md-48';
-                        break;
+                        return 'md-48'
                     default:
-                        return 'md-36';
+                        return 'md-36'
                 }
             },
             paddingAmount() {
                 switch (this.iconSize) {
                     case 'small':
-                        return '28px';
-                        break;
+                        return '28px'
                     case 'medium':
-                        return '32px';
-                        break;
+                        return '32px'
                     case 'large':
-                        return '38px';
-                        break;
+                        return '38px'
                     default:
-                        return '32px';
+                        return '32px'
                 }
             },
             listPos() {
@@ -195,38 +186,38 @@
                 }
             },
             transitionEnter() {
-                let animation = this.animation;
-                return animation.enter;
+                let animation = this.animation
+                return animation.enter
             },
             transitionLeave() {
-                let animation = this.animation;
-                return animation.leave;
+                let animation = this.animation
+                return animation.leave
             },
             animation() {
                 if (this.position === 'top-right' || this.position === 'top-left') {
                     return {
                         enter: 'animated quick fadeInDown',
                         leave: 'animated quick fadeOutUp'
-                    };
+                    }
                 } else if (this.position === 'bottom-right' || this.position === 'bottom-left') {
                     return {
                         enter: 'animated quick fadeInUp',
                         leave: 'animated quick fadeOutDown'
-                    };
+                    }
                 } else {
                     return {
                         enter: 'animated fadeInUp',
                         leave: 'animated fadeOutDown'
-                    };
+                    }
                 }
             },
             tooltipTrigger() {
 
                 if (this.fixedTooltip) {
-                    return 'manual';
+                    return 'manual'
                 }
 
-                return 'hover';
+                return 'hover'
             }
         },
         methods: {
@@ -237,82 +228,89 @@
                     this.tooltipPosition = 'right'
                 }
             },
+            toggleOrAction() {
+                if (this.actions.length) {
+                    this.toggle = !this.toggle
+                } else {
+                    this.toParent('action')
+                }
+            },
             toParent(name) {
-                this.$emit(name);
-                this.toggle = false;
+                this.$emit(name)
+                this.toggle = false
             },
             away() {
-                if(this.toggleWhenAway) {
-                    this.toggle = false;
+                if (this.toggleWhenAway) {
+                    this.toggle = false
                 }
             },
             setPosition() {
-                this.pos = {};
+                this.pos = {}
                 switch (this.position) {
                     case 'bottom-right':
-                        this.pos.right = '5vw';
-                        this.pos.bottom = '4vh';
-                        break;
+                        this.pos.right = '5vw'
+                        this.pos.bottom = '4vh'
+                        break
                     case 'bottom-left':
-                        this.pos.left = '5vw';
-                        this.pos.bottom = '4vh';
-                        break;
+                        this.pos.left = '5vw'
+                        this.pos.bottom = '4vh'
+                        break
                     case 'top-left':
-                        this.pos.left = '5vw';
-                        this.pos.top = '4vh';
-                        break;
+                        this.pos.left = '5vw'
+                        this.pos.top = '4vh'
+                        break
                     case 'top-right':
-                        this.pos.right = '5vw';
-                        this.pos.top = '4vh';
-                        break;
+                        this.pos.right = '5vw'
+                        this.pos.top = '4vh'
+                        break
                     default:
-                        this.pos.right = '5vw';
-                        this.pos.bottom = '4vh';
+                        this.pos.right = '5vw'
+                        this.pos.bottom = '4vh'
                 }
             },
             moveTransition() {
-                let wrapper = document.getElementById(this.position + '-wrapper');
-                let el = document.getElementById(this.position + '-action');
+                let wrapper = document.getElementById(this.position + '-wrapper')
+                let el = document.getElementById(this.position + '-action')
 
                 if (this.position === 'top-right' || this.position === 'top-left') {
-                    wrapper.appendChild(el);
+                    wrapper.appendChild(el)
                 } else {
-                    wrapper.insertBefore(el, wrapper.childNodes[0]);
+                    wrapper.insertBefore(el, wrapper.childNodes[0])
                 }
             },
             showTooltip(timeOut = 0) {
                 if (this.toggle && this.actions.length && this.fixedTooltip) {
-                  setTimeout(() => {
-                    this.$refs.actions.forEach((item) => {
-                      if(this.toggle) {
-                        item._tooltip.show();
-                      }
-                    });
-                  },timeOut);
+                    setTimeout(() => {
+                        this.$refs.actions.forEach((item) => {
+                            if (this.toggle) {
+                                item._tooltip.show()
+                            }
+                        })
+                    }, timeOut)
                 }
             },
             afterActionsTransitionEnter() {
-                this.showTooltip();
+                this.showTooltip()
             }
         },
         watch: {
-            position(val){
-                this.setPosition();
+            position(val) {
+                this.setPosition()
 
                 this.$nextTick(() => {
-                    this.moveTransition();
-                    this.tooltipPos();
-                });
+                    this.moveTransition()
+                    this.tooltipPos()
+                })
             }
         },
         mounted() {
-            this.moveTransition();
+            this.moveTransition()
         },
         created() {
-            this.setPosition();
+            this.setPosition()
 
             if (this.startOpened) {
-                this.showTooltip(this.tooltipTimeOutWhenStartOpened);
+                this.showTooltip(this.tooltipTimeOutWhenStartOpened)
             }
         }
     }

@@ -138,13 +138,10 @@
                 switch (this.iconSize) {
                     case 'small':
                         return 'md-18'
-                        break
                     case 'medium':
                         return 'md-24'
-                        break
                     case 'large':
                         return 'md-36'
-                        break
                     default:
                         return 'md-24'
                 }
@@ -156,13 +153,10 @@
                 switch (this.iconSize) {
                     case 'small':
                         return 'md-24'
-                        break
                     case 'medium':
                         return 'md-36'
-                        break
                     case 'large':
                         return 'md-48'
-                        break
                     default:
                         return 'md-36'
                 }
@@ -171,13 +165,10 @@
                 switch (this.iconSize) {
                     case 'small':
                         return '28px'
-                        break
                     case 'medium':
                         return '32px'
-                        break
                     case 'large':
                         return '38px'
-                        break
                     default:
                         return '32px'
                 }
